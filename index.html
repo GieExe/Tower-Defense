@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Tower Defense V10.2</title>
+    <title>Pixel Tower Defense V10.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -83,7 +83,7 @@
 </head>
 <body>
     <div class="game-container">
-        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V10.2</h1>
+        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V10.3</h1>
 
         <div id="game-layout">
             <div class="canvas-container">
@@ -200,12 +200,21 @@
              function drawPath() { /* ... V9 ... */ if(path.length<2)return;const pWO=TILE_SIZE*0.85;const pWI=TILE_SIZE*0.7;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#5a3a2a';ctx.lineWidth=pWO;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();ctx.strokeStyle='#a07050';ctx.lineWidth=pWI;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();}
 
              // --- Enemy Handling --- (Unchanged)
-            function spawnEnemy() { /* ... V10 ... */ let eTK='normal';let rR=Math.random();if(wave%BOSS_WAVE_INTERVAL===0&&wave>0){eTK='boss'}else{let cC=0;if(wave>=ARMORED_ENEMY_START_WAVE){cC+=ARMORED_ENEMY_CHANCE;if(rR<cC)eTK='armored'}if(eTK==='normal'&&wave>=CAMO_ENEMY_START_WAVE){cC+=CAMO_ENEMY_CHANCE;if(rR<cC)eTK='camo'}if(eTK==='normal'&&wave>=FAST_ENEMY_START_WAVE){cC+=FAST_ENEMY_CHANCE;if(rR<cC)eTK='fast'}}const eC=ENEMY_TYPES[eTK];let h=eC.baseHealth;if(eTK==='boss')h+=((wave)/BOSS_WAVE_INTERVAL)*ENEMY_HEALTH_INCREMENT*BOSS_WAVE_INTERVAL*1.5;else h+=(wave-1)*ENEMY_HEALTH_INCREMENT;enemies.push({x:path[0].x,y:path[0].y,health:h,maxHealth:h,speed:eC.speed,pathIndex:1,size:TILE_SIZE*.4*eC.sizeFactor,color:eC.color,type:eTK,shape:eC.shape,armorType:eC.armorType,isCamo:eC.isCamo,isDetected:false,speedMultiplier:1,slowTimer:0,poisonEffects:[],distanceTraveled:0});if(eTK==='boss')enemiesToSpawn=0;} // Fix: use wave-1 for normal scaling
+            function spawnEnemy() { /* ... V10 ... */ let eTK='normal';let rR=Math.random();if(wave%BOSS_WAVE_INTERVAL===0&&wave>0){eTK='boss'}else{let cC=0;if(wave>=ARMORED_ENEMY_START_WAVE){cC+=ARMORED_ENEMY_CHANCE;if(rR<cC)eTK='armored'}if(eTK==='normal'&&wave>=CAMO_ENEMY_START_WAVE){cC+=CAMO_ENEMY_CHANCE;if(rR<cC)eTK='camo'}if(eTK==='normal'&&wave>=FAST_ENEMY_START_WAVE){cC+=FAST_ENEMY_CHANCE;if(rR<cC)eTK='fast'}}const eC=ENEMY_TYPES[eTK];let h=eC.baseHealth;if(eTK==='boss')h+=((wave)/BOSS_WAVE_INTERVAL)*ENEMY_HEALTH_INCREMENT*BOSS_WAVE_INTERVAL*1.5;else h+=(wave-1)*ENEMY_HEALTH_INCREMENT;enemies.push({x:path[0].x,y:path[0].y,health:h,maxHealth:h,speed:eC.speed,pathIndex:1,size:TILE_SIZE*.4*eC.sizeFactor,color:eC.color,type:eTK,shape:eC.shape,armorType:eC.armorType,isCamo:eC.isCamo,isDetected:false,speedMultiplier:1,slowTimer:0,poisonEffects:[],distanceTraveled:0});if(eTK==='boss')enemiesToSpawn=0;}
             function handleEnemies() { /* ... V10 ... */ const dTs=towers.filter(t=>t.type==='detector');enemies.forEach(e=>{if(e.isCamo){e.isDetected=false;for(const d of dTs){if(getDistanceSq(e,d)<=d.detectionRadius*d.detectionRadius){e.isDetected=true;break}}}else{e.isDetected=true}});for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(e.health<=0){money+=5+Math.floor(wave/5);score+=10;updateUI();addEffect(e.x,e.y,e.size*1.5,e.color,'death_fade');enemies.splice(i,1);continue}if(e.slowTimer>0){e.slowTimer--;if(e.slowTimer<=0)e.speedMultiplier=1}for(let j=e.poisonEffects.length-1;j>=0;j--){const p=e.poisonEffects[j];p.timer--;p.tickTimer--;if(p.tickTimer<=0&&p.timer>0){e.health-=p.damage;p.tickTimer=POISON_TICK_RATE}if(p.timer<=0)e.poisonEffects.splice(j,1)}if(e.health<=0)continue;const effSp=e.speed*e.speedMultiplier;if(e.pathIndex<path.length){const tP=path[e.pathIndex];const dx=tP.x-e.x,dy=tP.y-e.y;const dWSq=dx*dx+dy*dy;let mD=effSp;if(dWSq<mD*mD){mD=Math.sqrt(dWSq);e.x=tP.x;e.y=tP.y;e.pathIndex++}else{const dW=Math.sqrt(dWSq);e.x+=(dx/dW)*mD;e.y+=(dy/dW)*mD}e.distanceTraveled+=mD}else{lives--;updateUI();enemies.splice(i,1);if(lives<=0)endGame(false);continue}}}
             function drawEnemies() { /* ... V10 ... */ enemies.forEach(e=>{ctx.globalAlpha=(e.isCamo&&!e.isDetected)?0.4:1.0;ctx.fillStyle=e.color;let bC='#1e7e34';if(e.poisonEffects.length>0)bC='#800080';if(e.speedMultiplier<1)bC='#007bff';ctx.strokeStyle=bC;ctx.lineWidth=2;ctx.beginPath();if(e.shape==='rect'){const cr=e.size*0.3,w=e.size,h=e.size*1.2;ctx.moveTo(e.x-w+cr,e.y-h);ctx.lineTo(e.x+w-cr,e.y-h);ctx.arcTo(e.x+w,e.y-h,e.x+w,e.y-h+cr,cr);ctx.lineTo(e.x+w,e.y+h-cr);ctx.arcTo(e.x+w,e.y+h,e.x+w-cr,e.y+h,cr);ctx.lineTo(e.x-w+cr,e.y+h);ctx.arcTo(e.x-w,e.y+h,e.x-w,e.y+h-cr,cr);ctx.lineTo(e.x-w,e.y-h+cr);ctx.arcTo(e.x-w,e.y-h,e.x-w+cr,e.y-h,cr);ctx.closePath()}else if(e.shape==='hexagon'){const s=e.size*1.2;ctx.moveTo(e.x+s,e.y);for(let i=1;i<=6;i++)ctx.lineTo(e.x+s*Math.cos(i*2*Math.PI/6),e.y+s*Math.sin(i*2*Math.PI/6));ctx.closePath()}else if(e.shape==='boss_shape'){const s=e.size*1.3,spikes=8,angle=Math.PI*2/spikes;ctx.beginPath();for(let i=0;i<spikes;i++){const x1=e.x+s*Math.cos(angle*i);const y1=e.y+s*Math.sin(angle*i);const x2=e.x+s*0.7*Math.cos(angle*i+angle/2);const y2=e.y+s*0.7*Math.sin(angle*i+angle/2);if(i===0)ctx.moveTo(x1,y1);else ctx.lineTo(x1,y1);ctx.lineTo(x2,y2);}ctx.closePath();}else{ctx.arc(e.x,e.y,e.size,0,Math.PI*2)}ctx.fill();ctx.stroke();const hBW=e.size*2,hBH=5,hP=e.health/e.maxHealth;ctx.fillStyle='#555';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW,hBH);ctx.fillStyle='#dc3545';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW*hP,hBH);ctx.globalAlpha=1.0;});}
 
-            // --- Tower Handling --- (Unchanged)
-             function canPlaceTower(gridX, gridY, towerType) { /* ... V9 Func ... */ const c=TOWER_TYPES[towerType];if(!c||!grid[gridY]?.[gridX]||grid[gridY][gridX].type!=='empty'||money<c.cost)return false;return true;}
+            // --- Tower Handling ---
+             function canPlaceTower(gridX, gridY, towerType) { // Added bounds check first
+                 const config = TOWER_TYPES[towerType];
+                 if (!config) return false;
+                 // Check bounds *before* accessing grid
+                 if (gridY < 0 || gridY >= GRID_HEIGHT || gridX < 0 || gridX >= GRID_WIDTH) return false;
+                 // Now safe to access grid
+                 if (!grid[gridY] || !grid[gridY][gridX] || grid[gridY][gridX].type !== 'empty') return false;
+                 if (money < config.cost) return false;
+                 return true;
+             }
              function placeTower(gridX, gridY) { /* ... V10 Func ... */ if(!placingTowerType)return;const c=TOWER_TYPES[placingTowerType];if(!c||!canPlaceTower(gridX,gridY,placingTowerType))return;money-=c.cost;const tX=gridX*TILE_SIZE+TILE_SIZE/2,tY=gridY*TILE_SIZE+TILE_SIZE/2;const nT={x:tX,y:tY,gridX:gridX,gridY:gridY,range:c.range,damage:c.damage,fireRate:c.fireRate,slowFactor:c.slowFactor,slowDuration:c.slowDuration,splashRadius:c.splashRadius,poisonDamage:c.poisonDamage,poisonDuration:c.poisonDuration,incomeAmount:c.incomeAmount,boostRadius:c.boostRadius,boostFactor:c.boostFactor,detectionRadius:c.detectionRadius,detectsCamo:c.detectsCamo,fireCooldown:0,target:null,type:placingTowerType,level:1,maxLevel:c.maxLevel,totalCost:c.cost,targetingPriority:'first',isFiring:false,firingTimer:0};towers.push(nT);grid[gridY][gridX].type='tower';grid[gridY][gridX].tower=nT;deselectTowerPurchase();updateUI();}
              function handleTowers() { /* ... V10 Func ... */ let boosts=calculateAmplifierBoosts();towers.forEach(t=>{if(t.firingTimer>0)t.firingTimer--;else t.isFiring=false;if(t.fireCooldown>0)t.fireCooldown--;if(t.type==='money'){if(t.fireCooldown<=0){money+=t.incomeAmount;t.fireCooldown=t.fireRate;updateUI();addEffect(t.x,t.y-TILE_SIZE*0.5,10,'#FFD700','text',`+$${t.incomeAmount}`)}}else if(t.type==='slow'){if(t.fireCooldown<=0){applySlowEffect(t);t.fireCooldown=t.fireRate;t.isFiring=true;t.firingTimer=5}}else if(t.type==='amplifier'||t.type==='detector'){}else{const rangeSq=t.range*t.range;if(!t.target||t.target.health<=0||getDistanceSq(t,t.target)>rangeSq||(t.target.isCamo&&!t.target.isDetected&&!t.detectsCamo))t.target=findTargetBasedOnPriority(t);if(t.fireCooldown<=0&&t.target){let boost=boosts[`${t.gridX},${t.gridY}`]||1.0;fireProjectile(t,t.target,boost);t.fireCooldown=t.fireRate;t.isFiring=true;t.firingTimer=5}}});}
              function calculateAmplifierBoosts() { /* ... V9 Func ... */ let b={};towers.filter(t=>t.type==='amplifier').forEach(a=>{const bRSq=a.boostRadius*a.boostRadius;towers.forEach(tT=>{if(tT!==a&&tT.damage>0){if(getDistanceSq(a,tT)<=bRSq){const k=`${tT.gridX},${tT.gridY}`;b[k]=Math.max(b[k]||1.0,a.boostFactor)}}})});return b;}
@@ -227,7 +236,7 @@
              function drawEffects(){effects.forEach(e=>{const alpha=Math.max(0,e.timer/e.duration);ctx.globalAlpha=alpha;ctx.lineWidth=2;if(e.type==='explosion'){const nR=3;for(let i=1;i<=nR;i++){ctx.beginPath();const r=e.currentRadius*(i/nR);ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}}else if(e.type==='text'&&e.text){ctx.fillStyle=e.color;ctx.font=`${TILE_SIZE*0.4}px 'Press Start 2P'`;ctx.textAlign='center';ctx.fillText(e.text,e.x,e.y)}else if(e.type==='death_fade'){ctx.fillStyle=e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.maxRadius*(1-alpha),0,Math.PI*2);ctx.fill()}else if(e.type==='hit_flash'){ctx.fillStyle=e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.maxRadius,0,Math.PI*2);ctx.fill()}else{ctx.beginPath();ctx.arc(e.x,e.y,e.currentRadius,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}ctx.globalAlpha=1.0})}
 
             // --- Wave Management --- (Boss wave enemy count fix)
-            function startWave() { // Corrected Boss Wave Check
+            function startWave() { // Corrected Boss Wave Check + Fix
                 if (waveInProgress || gameOver) return;
                 if (wave > 0 && timeSinceWaveEnd > 0) { money += WAVE_SKIP_BONUS; console.log(`Skip bonus:+${WAVE_SKIP_BONUS}`); addEffect(startWaveBtn.offsetLeft + startWaveBtn.offsetWidth / 2, startWaveBtn.offsetTop, 10, '#FFD700', 'text', `+${WAVE_SKIP_BONUS}$`); updateUI(); }
                 wave++; // Increment wave *before* checking for boss wave
@@ -238,8 +247,8 @@
             function handleWaves() { // Ensure spawn count isn't decremented for boss
                 if (!waveInProgress) { if (wave > 0 && !gameOver) timeSinceWaveEnd++; return; }
                 if (enemiesToSpawn > 0 && spawnTimer <= 0) {
-                    spawnEnemy();
-                    // Only decrement count if it's NOT a boss wave (where spawnEnemy sets count to 0)
+                    spawnEnemy(); // spawnEnemy now sets enemiesToSpawn=0 if it's a boss
+                    // Only decrement count if it's NOT a boss wave
                     if (wave % BOSS_WAVE_INTERVAL !== 0) {
                          enemiesToSpawn--;
                     }
@@ -253,7 +262,18 @@
             function updateUI(){/* ... V10 ... */}
             function setupEventListeners(){ // Added listener for new tower button
                 startWaveBtn.addEventListener('click',startWave);sellTowerBtn.addEventListener('click',sellSelectedTower);upgradeTowerBtn.addEventListener('click',upgradeSelectedTower);
-                towerButtons.forEach(b=>{b.addEventListener('click',()=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(c)selectTowerPurchase(t,c.cost)})}); // This now includes detector button
+                // Correctly attach listener to ALL tower buttons
+                document.querySelectorAll('.tower-button').forEach(b=>{ // Select ALL buttons with the class
+                    b.addEventListener('click',()=>{
+                        const t=b.dataset.type;
+                        const c=TOWER_TYPES[t];
+                        if(c) {
+                            selectTowerPurchase(t,c.cost);
+                        } else {
+                            console.error("Unknown tower type clicked:", t);
+                        }
+                    })
+                });
                 targetButtons.forEach(b=>{b.addEventListener('click',()=>{if(selectedTower&&!b.disabled){selectedTower.targetingPriority=b.dataset.priority;updateUI()}})});
                 canvas.addEventListener('click',handleCanvasClick);canvas.addEventListener('mousemove',handleMouseMove);canvas.addEventListener('mouseleave',()=>{if(placingTowerType)mouse={x:-1,y:-1};updateScaledMouse()});
                 document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){deselectTowerPurchase();deselectPlacedTower()}});
@@ -277,8 +297,9 @@
                     console.log("Deselecting tower purchase"); // Debug log
                 }
                 placingTowerType = null;
-                towerButtons.forEach(btn => btn.classList.remove('selected'));
-                updateUI(); // Update needed to remove highlight
+                // Ensure ALL tower buttons lose selection highlight
+                 document.querySelectorAll('.tower-button').forEach(btn => btn.classList.remove('selected'));
+                updateUI(); // Update needed to reflect deselection
             }
             function selectPlacedTower(tower){/* ... V10 ... */}
             function deselectPlacedTower(){/* ... V10 ... */}
