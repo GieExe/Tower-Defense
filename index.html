@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Tower Defense V10.11 (Mouse Debug)</title>
+    <title>Pixel Tower Defense V11.1 (Debug)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -46,7 +46,7 @@
         #description-area h3 { font-size: clamp(0.9em, 3vw, 1.1em); color: #aaa; text-transform: uppercase; margin-bottom: 10px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
         #description-area h4 { font-size: clamp(0.8em, 2.8vw, 1em); color: #ccc; margin-top: 15px; margin-bottom: 5px; }
         #description-area .desc-item { display: flex; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
-        #description-area .desc-icon { width: 24px; height: 24px; flex-shrink: 0; border: 1px solid #444; background-color: #333; border-radius: 4px; display: inline-block; }
+        #description-area .desc-icon { width: 24px; height: 24px; flex-shrink: 0; border: 1px solid #444; background-color: #333; border-radius: 4px; display: inline-block; vertical-align: middle; }
         #description-area .desc-text { line-height: 1.4; color: #bbb; }
         #description-area strong { color: #ddd; }
         .message-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; background-color: rgba(0, 0, 0, 0.85); color: white; padding: 30px 40px; border-radius: 10px; font-size: 1.5em; text-align: center; border: 3px solid #00ffff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.7); display: none; pointer-events: none; }
@@ -55,7 +55,7 @@
 </head>
 <body>
     <div class="game-container">
-        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V10.11 (Mouse Debug)</h1>
+        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V11.1 (Debug)</h1>
         <div id="game-layout">
             <div class="canvas-container"> <canvas id="gameCanvas" width="600" height="400"></canvas> </div>
             <div class="control-panel">
@@ -163,11 +163,8 @@
                  drawTowers(); drawEnemies(); drawProjectiles(); drawEffects();
 
                  // Visual Mouse Debugging
-                 if (scaledMouse.x > 0 && scaledMouse.y > 0) { // Only draw if mouse is likely over canvas
-                    ctx.fillStyle = 'red';
-                    ctx.beginPath();
-                    ctx.arc(scaledMouse.x, scaledMouse.y, 3, 0, Math.PI * 2);
-                    ctx.fill();
+                 if (scaledMouse.x > 0 && scaledMouse.y > 0) {
+                    ctx.fillStyle = 'red'; ctx.beginPath(); ctx.arc(scaledMouse.x, scaledMouse.y, 3, 0, Math.PI * 2); ctx.fill();
                  }
 
                  if (placingTowerType) drawTowerPlacementPreview();
@@ -230,16 +227,16 @@
              function calculateAmplifierBoosts() { /* ... V9 Func ... */ let b={};towers.filter(t=>t.type==='amplifier').forEach(a=>{const bRSq=a.boostRadius*a.boostRadius;towers.forEach(tT=>{if(tT!==a&&tT.damage>0){if(getDistanceSq(a,tT)<=bRSq){const k=`${tT.gridX},${tT.gridY}`;b[k]=Math.max(b[k]||1.0,a.boostFactor)}}})});return b;}
              function applySlowEffect(tower) { /* ... V8 Func ... */ const rSq=tower.range*tower.range;enemies.forEach(e=>{if(getDistanceSq(tower,e)<=rSq){e.speedMultiplier=tower.slowFactor;e.slowTimer=tower.slowDuration}});}
              function findTargetBasedOnPriority(tower) { /* ... V10 Func ... */ const rSq=tower.range*tower.range;const tC=TOWER_TYPES[tower.type];let pT=enemies.filter(e=>{if(getDistanceSq(tower,e)>rSq)return false;if(e.isCamo&&!e.isDetected&&!tC.detectsCamo)return false;return true});if(pT.length===0)return null;switch(tower.targetingPriority){case'first':pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break;case'last':pT.sort((a,b)=>a.distanceTraveled-b.distanceTraveled);break;case'strongest':pT.sort((a,b)=>b.health-a.health);break;case'weakest':pT.sort((a,b)=>a.health-b.health);break;default:pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break}return pT[0];}
-             function drawTowers() { /* ... V10 Func (Animations Removed) ... */ towers.forEach(t=>{const c=TOWER_TYPES[t.type];const tS=TILE_SIZE*.3+(t.level-1)*2;const x=t.x,y=t.y;ctx.save();ctx.translate(x,y);ctx.fillStyle=c.color;ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();if(c.shape==='rect'){const bS=tS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.strokeStyle='#222';ctx.beginPath();ctx.rect(-bS*.15,-bS*.6,bS*.3,bS*.4);ctx.fill();ctx.stroke()}else if(c.shape==='triangle'){const sz=tS*1.4;ctx.moveTo(0,-sz*.8);ctx.lineTo(-sz,sz*.4);ctx.lineTo(sz,sz*.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,sz*0.2,0,Math.PI*2);ctx.fill()}else if(c.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=tS*1.5,iR=tS*.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath();ctx.fill();ctx.stroke()}else if(c.shape==='mortar'){const mS=tS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*.5,0,Math.PI*2);ctx.fill()}else if(c.shape==='vial'){const vS=tS*1.8;ctx.rect(-vS*.4,-vS*.5,vS*.8,vS);ctx.rect(-vS*.2,-vS*.7,vS*.4,vS*.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*.35,-vS*.4,vS*.7,vS*.8);ctx.fill()}else if(c.shape==='dollar'){const dS=tS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);ctx.strokeStyle=c.color;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,dS*.6,0,Math.PI*2);ctx.stroke();}else if(c.shape==='amplifier'){const aS=tS*1.5;const nL=8,ang=Math.PI*2/nL;ctx.beginPath();ctx.arc(0,0,aS*.8,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle=c.color;ctx.lineWidth=2;for(let i=0;i<nL;i++){const cA=ang*i;const sX=Math.cos(cA)*aS*.8,sY=Math.sin(cA)*aS*.8;const eX=Math.cos(cA)*aS*1.2,eY=Math.sin(cA)*aS*1.2;ctx.beginPath();ctx.moveTo(sX,sY);ctx.lineTo(eX,eY);ctx.stroke();}}else if(c.shape==='detector'){const dS=tS*1.7;ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-dS*.1,dS*.3,dS*.2,dS*.4);ctx.fill();ctx.stroke();ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8);ctx.fill();ctx.stroke();}else{ctx.arc(0,0,tS,0,Math.PI*2);ctx.fill();ctx.stroke()}ctx.restore();if(selectedTower===t){ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.beginPath();const rTD=t.type==='amplifier'?t.boostRadius:t.type==='detector'?t.detectionRadius:t.range;if(rTD>0){ctx.arc(x,y,rTD,0,Math.PI*2);ctx.stroke()}}if(t.level>1){ctx.fillStyle='yellow';ctx.font=`${TILE_SIZE*.5}px 'Press Start 2P'`;const sS=5,sSp=7;const tW=(t.level-1)*sSp;const sX=x-tW/2+sS/2;for(let i=1;i<t.level;i++){const starX=sX+(i-1)*sSp;const starY=y-tS-10;ctx.fillText('*',starX-sS/2,starY+sS/2)}}});}
+             function drawTowers() { /* ... V10 Func (Animations Removed) ... */ towers.forEach(t=>{const c=TOWER_TYPES[t.type];const tS=TILE_SIZE*.3+(t.level-1)*2;const x=t.x,y=t.y;ctx.save();ctx.translate(x,y);ctx.fillStyle=c.color;ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();if(c.shape==='rect'){const bS=tS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.strokeStyle='#222';ctx.beginPath();ctx.rect(-bS*.15,-bS*.6,bS*.3,bS*.4);ctx.fill();ctx.stroke()}else if(c.shape==='triangle'){const sz=tS*1.4;ctx.moveTo(0,-sz*.8);ctx.lineTo(-sz,sz*.4);ctx.lineTo(sz,sz*.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,sz*0.2,0,Math.PI*2);ctx.fill()}else if(c.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=tS*1.5,iR=tS*.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath();ctx.fill();ctx.stroke()}else if(c.shape==='mortar'){const mS=tS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*.5,0,Math.PI*2);ctx.fill()}else if(c.shape==='vial'){const vS=tS*1.8;ctx.rect(-vS*.4,-vS*.5,vS*.8,vS);ctx.rect(-vS*.2,-vS*.7,vS*.4,vS*.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*.35,-vS*.4,vS*.7,vS*.8);ctx.fill()}else if(c.shape==='dollar'){const dS=tS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);ctx.strokeStyle=c.color;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,dS*.6,0,Math.PI*2);ctx.stroke();}else if(c.shape==='amplifier'){const aS=tS*1.5;const nL=8,ang=Math.PI*2/nL;ctx.beginPath();ctx.arc(0,0,aS*.8,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle=c.color;ctx.lineWidth=2;for(let i=0;i<nL;i++){const cA=ang*i;const sX=Math.cos(cA)*aS*.8,sY=Math.sin(cA)*aS*.8;const eX=Math.cos(cA)*aS*1.2,eY=Math.sin(cA)*aS*1.2;ctx.beginPath();ctx.moveTo(sX,sY);ctx.lineTo(eX,eY);ctx.stroke();}}else if(c.shape==='detector'){const dS=tS*1.7;ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-dS*.1,dS*.3,dS*.2,dS*.4);ctx.fill();ctx.stroke();ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(0,0,dS,Math.PI*1.1,Math.PI*1.9);/*Wider Arc*/ctx.fill();ctx.stroke();/*Center point*/ctx.fillStyle='#aaa';ctx.beginPath();ctx.arc(0,dS*0.2,dS*0.15,0,Math.PI*2);ctx.fill();}else{ctx.arc(0,0,tS,0,Math.PI*2);ctx.fill();ctx.stroke()}ctx.restore();if(selectedTower===t){ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.beginPath();const rTD=t.type==='amplifier'?t.boostRadius:t.type==='detector'?t.detectionRadius:t.range;if(rTD>0){ctx.arc(x,y,rTD,0,Math.PI*2);ctx.stroke()}}if(t.level>1){ctx.fillStyle='yellow';ctx.font=`${TILE_SIZE*.5}px 'Press Start 2P'`;const sS=5,sSp=7;const tW=(t.level-1)*sSp;const sX=x-tW/2+sS/2;for(let i=1;i<t.level;i++){const starX=sX+(i-1)*sSp;const starY=y-tS-10;ctx.fillText('*',starX-sS/2,starY+sS/2)}}});}
              function drawTowerPlacementPreview() { // Added explicit check for gridX/gridY validity
                  if (typeof scaledMouse !== 'object' || typeof scaledMouse.x !== 'number' || typeof scaledMouse.y !== 'number' || isNaN(scaledMouse.x) || isNaN(scaledMouse.y)) { /*console.warn("DEBUG: Invalid scaledMouse coordinates:", scaledMouse);*/ return; } // Check scaledMouse validity
-                 const gridX = Math.floor(scaledMouse.x / TILE_SIZE); let gridY = Math.floor(scaledMouse.y / TILE_SIZE); // Use let for gridY just in case
+                 let gridX = Math.floor(scaledMouse.x / TILE_SIZE); let gridY = Math.floor(scaledMouse.y / TILE_SIZE); // Use let
                  if (typeof gridY !== 'number' || isNaN(gridY) || typeof gridX !== 'number' || isNaN(gridX)) { console.error(`DEBUG: Invalid grid coords calculated in preview: X=${gridX}, Y=${gridY}`); return; } // Check calculated grid coords
                  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT || !placingTowerType) { /*console.log("DEBUG: Preview condition failed (bounds or no type)");*/ return; } // Check bounds and type
                  const pX=gridX*TILE_SIZE+TILE_SIZE/2,pY=gridY*TILE_SIZE+TILE_SIZE/2; const config=TOWER_TYPES[placingTowerType]; if(!config)return; let canPlace=canPlaceTower(gridX,gridY,placingTowerType);
                  ctx.save();ctx.translate(pX,pY);ctx.globalAlpha=0.5; ctx.fillStyle=canPlace?config.color:'red';ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath(); const pS=TILE_SIZE*0.3;
                  // Drawing logic (unchanged from V10)
-                 if(config.shape==='rect'){const bS=pS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4)}else if(config.shape==='triangle'){const tS=pS*1.4;ctx.moveTo(0,-tS*0.8);ctx.lineTo(-tS,tS*0.4);ctx.lineTo(tS,tS*0.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,tS*0.2,0,Math.PI*2)}else if(config.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=pS*1.5,iR=pS*0.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath()}else if(config.shape==='mortar'){const mS=pS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*0.5,0,Math.PI*2)}else if(config.shape==='vial'){const vS=pS*1.8;ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS);ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8)}else if(config.shape==='dollar'){const dS=pS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0)}else if(config.shape==='amplifier'){const aS=pS*1.5;ctx.arc(0,0,aS*0.8,0,Math.PI*2)}else if(config.shape==='detector'){const dS=pS*1.7;ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8)}else{ctx.arc(0,0,pS,0,Math.PI*2)}
+                 if(config.shape==='rect'){const bS=pS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4)}else if(config.shape==='triangle'){const tS=pS*1.4;ctx.moveTo(0,-tS*0.8);ctx.lineTo(-tS,tS*0.4);ctx.lineTo(tS,tS*0.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,tS*0.2,0,Math.PI*2)}else if(config.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=pS*1.5,iR=pS*0.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath()}else if(config.shape==='mortar'){const mS=pS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*0.5,0,Math.PI*2)}else if(config.shape==='vial'){const vS=pS*1.8;ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS);ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8)}else if(config.shape==='dollar'){const dS=pS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0)}else if(config.shape==='amplifier'){const aS=pS*1.5;ctx.arc(0,0,aS*0.8,0,Math.PI*2)}else if(config.shape==='detector'){const dS=pS*1.7;ctx.arc(0,0,dS,Math.PI*1.1,Math.PI*1.9)}else{ctx.arc(0,0,pS,0,Math.PI*2)}
                  ctx.fill();ctx.stroke();ctx.restore();
                  const rTD=config.type==='amplifier'?config.boostRadius:config.type==='detector'?config.detectionRadius:config.range; if(rTD>0){ctx.globalAlpha=0.5;ctx.strokeStyle=canPlace?'rgba(255,255,255,0.5)':'rgba(255,0,0,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(pX,pY,rTD,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1.0}
              }
@@ -270,7 +267,7 @@
                 }
                 if (waveDisplay) waveDisplay.textContent = wave;
                 // Rest of updateUI...
-                towerButtonsNodeList.forEach(b=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(!c)return;const cost=c.cost;const d=money<cost||gameOver;b.disabled=d;b.classList.toggle('disabled',d);b.classList.toggle('selected',placingTowerType===t);b.textContent=`${t.charAt(0).toUpperCase()+t.slice(1)} (${cost}$)`});startWaveBtn.disabled=waveInProgress||gameOver;startWaveBtn.classList.toggle('disabled',waveInProgress||gameOver);let canSell=false,canUpgrade=false,sellAmount=0,upgradeCost=0,currentPriority=null;if(selectedTower&&!gameOver){canSell=true;sellAmount=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);currentPriority=selectedTower.targetingPriority;if(selectedTower.level<selectedTower.maxLevel){const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI<tC.upgradeCosts.length){upgradeCost=tC.upgradeCosts[uI];if(money>=upgradeCost)canUpgrade=true}}}towerActionsDiv.classList.toggle('visible',!!selectedTower);sellTowerBtn.disabled=!canSell;sellTowerBtn.textContent=`Sell (${sellAmount}$)`;upgradeTowerBtn.disabled=!canUpgrade;upgradeTowerBtn.textContent=(selectedTower&&selectedTower.level>=selectedTower.maxLevel)?'Max Lvl':`Upgrade (${upgradeCost}$)`;targetingControlsDiv.classList.toggle('visible',!!selectedTower);targetButtons.forEach(b=>{if(selectedTower){b.classList.toggle('active',b.dataset.priority===currentPriority);b.disabled=gameOver;b.classList.toggle('disabled',gameOver)}else{b.classList.remove('active');b.disabled=true;b.classList.add('disabled')}});}
+                towerButtonsNodeList.forEach(b=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(!c)return;const cost=c.cost;const d=money<cost||gameOver;b.disabled=d;b.classList.toggle('disabled',d);b.classList.toggle('selected',placingTowerType===t);b.textContent=`${t.charAt(0).toUpperCase()+t.slice(1)} (${cost}$)`});startWaveBtn.disabled=waveInProgress||gameOver;startWaveBtn.classList.toggle('disabled',waveInProgress||gameOver);let canSell=false,canUpgrade=false,sellAmount=0,upgradeCost=0,currentPriority=null;if(selectedTower&&!gameOver){canSell=true;sellAmount=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);currentPriority=selectedTower.targetingPriority;if(selectedTower.level<selectedTower.maxLevel){const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(tC && tC.upgradeCosts && uI<tC.upgradeCosts.length){upgradeCost=tC.upgradeCosts[uI];if(money>=upgradeCost)canUpgrade=true;}else if(tC && !tC.upgradeCosts){/*Tower might not have upgrades defined*/}else{console.warn(`Upgrade config issue for ${selectedTower.type} Lvl ${selectedTower.level}`)}}else if(selectedTower.maxLevel <= 1){/*Max level is 1*/}}towerActionsDiv.classList.toggle('visible',!!selectedTower);sellTowerBtn.disabled=!canSell;sellTowerBtn.textContent=`Sell (${sellAmount}$)`;upgradeTowerBtn.disabled=!canUpgrade;upgradeTowerBtn.textContent=(selectedTower&&selectedTower.level>=selectedTower.maxLevel)?'Max Lvl':`Upgrade (${upgradeCost}$)`;targetingControlsDiv.classList.toggle('visible',!!selectedTower);targetButtons.forEach(b=>{if(selectedTower){b.classList.toggle('active',b.dataset.priority===currentPriority);b.disabled=gameOver;b.classList.toggle('disabled',gameOver)}else{b.classList.remove('active');b.disabled=true;b.classList.add('disabled')}});}
             function setupEventListeners(){ // Added listener for new tower button + Debugging
                 console.log("DEBUG: Setting up event listeners...");
                 if (!startWaveBtn) { console.error("DEBUG ERROR: startWaveBtn not found!"); return; }
@@ -326,33 +323,32 @@
                 document.querySelectorAll('.tower-button').forEach(btn => btn.classList.remove('selected'));
                 updateUI(); // Update needed to reflect deselection
             }
-            function selectPlacedTower(tower){/* ... V10 ... */}
-            function deselectPlacedTower(){/* ... V10 ... */}
+            function selectPlacedTower(tower){ // Added log
+                console.log("DEBUG: Selecting placed tower:", tower);
+                selectedTower = tower;
+                deselectTowerPurchase(); // Cannot place a new tower while one is selected
+                updateUI(); // Update sell/upgrade button state
+            }
+            function deselectPlacedTower(){ // Added log
+                 if (selectedTower) { // Only log if something was selected
+                    console.log("DEBUG: Deselecting placed tower");
+                    selectedTower = null;
+                    updateUI(); // Update sell/upgrade button state
+                }
+            }
 
              // --- Mouse Handling with Scaling ---
              function updateCanvasScale(){ // Added log
                  const rect = canvas.getBoundingClientRect();
-                 // Prevent division by zero if canvas has no size
-                 if (rect.width === 0 || rect.height === 0) {
-                     console.warn("DEBUG: Canvas rect has zero dimension, skipping scale update.");
-                     return;
-                 }
-                 scaleX = BASE_CANVAS_WIDTH / rect.width;
-                 scaleY = BASE_CANVAS_HEIGHT / rect.height;
+                 if (rect.width === 0 || rect.height === 0) { console.warn("DEBUG: Canvas rect has zero dimension, skipping scale update."); return; }
+                 scaleX = BASE_CANVAS_WIDTH / rect.width; scaleY = BASE_CANVAS_HEIGHT / rect.height;
                  console.log(`DEBUG: Canvas resized/scaled. Rect W/H: ${rect.width}/${rect.height}, Scale X/Y: ${scaleX.toFixed(2)}/${scaleY.toFixed(2)}`); // DEBUG LOG
              }
              function updateScaledMouse(){ // Added log
                  const rect = canvas.getBoundingClientRect();
-                 // Check if rect is valid before calculating
-                 if (rect.width === 0 || rect.height === 0) {
-                    // console.warn("DEBUG: updateScaledMouse - Canvas rect has zero dimension.");
-                    scaledMouse.x = -1; // Set invalid coords if rect is bad
-                    scaledMouse.y = -1;
-                    return;
-                 }
-                 scaledMouse.x = (mouse.x - rect.left) * scaleX;
-                 scaledMouse.y = (mouse.y - rect.top) * scaleY;
-                 // console.log(`DEBUG: Scaled Mouse: X=${scaledMouse.x.toFixed(1)}, Y=${scaledMouse.y.toFixed(1)} (Raw: ${mouse.x},${mouse.y} | Rect L/T: ${rect.left.toFixed(1)}/${rect.top.toFixed(1)} | Scale X/Y: ${scaleX.toFixed(2)}/${scaleY.toFixed(2)})`); // DEBUG LOG (can be noisy)
+                 if (rect.width === 0 || rect.height === 0) { scaledMouse.x = -1; scaledMouse.y = -1; return; }
+                 scaledMouse.x = (mouse.x - rect.left) * scaleX; scaledMouse.y = (mouse.y - rect.top) * scaleY;
+                 // console.log(`DEBUG: Scaled Mouse: X=${scaledMouse.x.toFixed(1)}, Y=${scaledMouse.y.toFixed(1)}`); // DEBUG LOG (noisy)
              }
              function handleCanvasClick(event){ // Added log
                  mouse.x = event.clientX; mouse.y = event.clientY;
@@ -376,7 +372,7 @@
 
             // --- Description Population --- (Unchanged)
             function populateDescriptions() { /* ... V10 ... */ let tH='<h4>Towers</h4>';for(const ty in TOWER_TYPES){const c=TOWER_TYPES[ty];const iS=generateIconSVG(ty,'tower',c);tH+=`<div class="desc-item"><span class="desc-icon">${iS}</span><span class="desc-text"><strong>${c.name||ty}:</strong> ${c.description||'N/A'} (Cost:${c.cost})</span></div>`;}towerDescDiv.innerHTML=tH;let eH='<h4>Enemies</h4>';for(const ty in ENEMY_TYPES){const c=ENEMY_TYPES[ty];const iS=generateIconSVG(ty,'enemy',c);eH+=`<div class="desc-item"><span class="desc-icon">${iS}</span><span class="desc-text"><strong>${c.name||ty}:</strong> ${c.description||'N/A'}</span></div>`;}enemyDescDiv.innerHTML=eH;}
-            function generateIconSVG(type, category, config) { /* ... V10 SVG generation ... */ const size=24;let svgContent='';const strokeColor='#bbb';const strokeWidth=1.5;if(category==='tower'){const c=TOWER_TYPES[type];if(!c){console.error(`IconGen: Invalid tower type ${type}`);return''}const color=c.color||'#ccc';const shape=c.shape||'circle';const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.2}" y="${size*.2}" width="${size*.6}" height="${size*.6}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.1}" width="${size*.2}" height="${size*.3}" fill="#555" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='triangle'){svgContent=`<polygon points="${size/2},${size*.1} ${size*.1},${size*.9} ${size*.9},${size*.9}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size*.6}" r="${s*.3}" fill="white"/>`;}else if(shape==='snowflake'){svgContent=`<path d="M${size/2},${size*.1} L${size*.6},${size*.35} L${size*.85},${size*.35} L${size*.65},${size*.5} L${size*.85},${size*.65} L${size*.6},${size*.65} L${size/2},${size*.9} L${size*.4},${size*.65} L${size*.15},${size*.65} L${size*.35},${size*.5} L${size*.15},${size*.35} L${size*.4},${size*.35} Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='mortar'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s*1.2}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size/2}" r="${s*.6}" fill="#444"/>`;}else if(shape==='vial'){svgContent=`<rect x="${size*.3}" y="${size*.25}" width="${size*.4}" height="${size*.5}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.15}" width="${size*.2}" height="${size*.1}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><rect x="${size*.35}" y="${size*.3}" width="${size*.3}" height="${size*.4}" fill="rgba(0,255,0,0.6)"/>`;}else if(shape==='dollar'){svgContent=`<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="${size*.8}" font-family="'Press Start 2P', cursive" fill="${color}">$</text><circle cx="${size/2}" cy="${size/2}" r="${size*.4}" fill="none" stroke="${color}" stroke-width="1"/>`;}else if(shape==='amplifier'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><path d="M${size/2},${size*.1} L${size/2},${size*.9} M${size*.1},${size/2} L${size*.9},${size/2} M${size*.2},${size*.2} L${size*.8},${size*.8} M${size*.2},${size*.8} L${size*.8},${size*.2}" stroke="${color}" stroke-width="2"/>`;}else if(shape==='detector'){svgContent=`<path d="M${size*.2},${size*.8} Q${size*.5},${size*.1} ${size*.8},${size*.8}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"/><line x1="${size*.5}" y1="${size*.8}" x2="${size*.5}" y2="${size*.5}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><circle cx="${size*.5}" cy="${size*.5}" r="2" fill="${color}"/>`;}else{svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}}else if(category==='enemy'){const c=ENEMY_TYPES[type];if(!c){console.error(`IconGen: Invalid enemy type ${type}`);return''}const color=c.color||'#ccc';const shape=c.shape||'circle';const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.25}" y="${size*.2}" width="${size*.5}" height="${size*.6}" rx="3" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='hexagon'){svgContent=`<polygon points="${size*.5},${size*.1} ${size*.9},${size*.3} ${size*.9},${size*.7} ${size*.5},${size*.9} ${size*.1},${size*.7} ${size*.1},${size*.3}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='boss_shape'){svgContent=`<path d="M12,2 L14.45,8.27 L21.41,8.27 L15.98,12.73 L18.43,18.99 L12,14.51 L5.57,18.99 L8.02,12.73 L2.59,8.27 L9.55,8.27 Z" fill="${color}" stroke="${strokeColor}" stroke-width="1"/>`;}else{const camoStyle=c.isCamo?` opacity="0.5"`:'';svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${camoStyle}/>`;}}return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;}
+            function generateIconSVG(type, category, config) { /* ... V10 SVG generation ... */ const size=24;let svgContent='';const strokeColor='#bbb';const strokeWidth=1.5;if(category==='tower'){const c=TOWER_TYPES[type];if(!c){console.error(`IconGen: Invalid tower type ${type}`);return''}const color=c.color||'#ccc';const shape=c.shape||'circle';const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.2}" y="${size*.2}" width="${size*.6}" height="${size*.6}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.1}" width="${size*.2}" height="${size*.3}" fill="#555" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='triangle'){svgContent=`<polygon points="${size/2},${size*.1} ${size*.1},${size*.9} ${size*.9},${size*.9}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size*.6}" r="${s*.3}" fill="white"/>`;}else if(shape==='snowflake'){svgContent=`<path d="M${size/2},${size*.1} L${size*.6},${size*.35} L${size*.85},${size*.35} L${size*.65},${size*.5} L${size*.85},${size*.65} L${size*.6},${size*.65} L${size/2},${size*.9} L${size*.4},${size*.65} L${size*.15},${size*.65} L${size*.35},${size*.5} L${size*.15},${size*.35} L${size*.4},${size*.35} Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='mortar'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s*1.2}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size/2}" r="${s*.6}" fill="#444"/>`;}else if(shape==='vial'){svgContent=`<rect x="${size*.3}" y="${size*.25}" width="${size*.4}" height="${size*.5}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.15}" width="${size*.2}" height="${size*.1}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><rect x="${size*.35}" y="${size*.3}" width="${size*.3}" height="${size*.4}" fill="rgba(0,255,0,0.6)"/>`;}else if(shape==='dollar'){svgContent=`<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="${size*.8}" font-family="'Press Start 2P', cursive" fill="${color}">$</text><circle cx="${size/2}" cy="${size/2}" r="${size*.4}" fill="none" stroke="${color}" stroke-width="1"/>`;}else if(shape==='amplifier'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><path d="M${size/2},${size*.1} L${size/2},${size*.9} M${size*.1},${size/2} L${size*.9},${size/2} M${size*.2},${size*.2} L${size*.8},${size*.8} M${size*.2},${size*.8} L${size*.8},${size*.2}" stroke="${color}" stroke-width="2"/>`;}else if(shape==='detector'){svgContent=`<path d="M${size*.2},${size*.8} Q${size*.5},${size*.1} ${size*.8},${size*.8}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"/><line x1="${size*.5}" y1="${size*.8}" x2="${size*.5}" y2="${size*.5}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><circle cx="${size*.5}" cy="${size*.5}" r="1.5" fill="${color}"/><circle cx="${size/2}" cy="${size/2}" r="${s*1.1}" stroke="${color}" stroke-width="1" fill="none" stroke-dasharray="2,2"/>`;}else{svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}}else if(category==='enemy'){const c=ENEMY_TYPES[type];if(!c){console.error(`IconGen: Invalid enemy type ${type}`);return''}const color=c.color||'#ccc';const shape=c.shape||'circle';const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.25}" y="${size*.2}" width="${size*.5}" height="${size*.6}" rx="3" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='hexagon'){svgContent=`<polygon points="${size*.5},${size*.1} ${size*.9},${size*.3} ${size*.9},${size*.7} ${size*.5},${size*.9} ${size*.1},${size*.7} ${size*.1},${size*.3}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='boss_shape'){svgContent=`<path d="M12,2 L14.45,8.27 L21.41,8.27 L15.98,12.73 L18.43,18.99 L12,14.51 L5.57,18.99 L8.02,12.73 L2.59,8.27 L9.55,8.27 Z" fill="${color}" stroke="${strokeColor}" stroke-width="1"/>`;}else{const camoStyle=c.isCamo?` opacity="0.5"`:'';svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${camoStyle}/>`;}}return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;}
 
 
             // --- Game Over / Message --- (Auto-hide logic)
@@ -389,11 +385,45 @@
             }
             function hideMessage() {
                  messageBox.style.display = 'none'; messageTimeout = null;
-                 if (!gameOver) { // Only unpause if game is not over
+                 if (gameOver) { // If the game was over, reset it
+                    resetGame();
+                 } else { // Otherwise, just unpause
                     gamePaused = false;
                     requestAnimationFrame(gameLoop); // Resume loop
                  }
              }
+
+             // --- Game Reset ---
+             function resetGame() {
+                 console.log("DEBUG: Resetting game...");
+                 // Reset core stats
+                 money = STARTING_MONEY;
+                 score = 0;
+                 lives = STARTING_LIVES;
+                 wave = 0;
+                 // Clear dynamic elements
+                 enemies = [];
+                 towers = [];
+                 projectiles = [];
+                 effects = [];
+                 // Reset grid and path markings
+                 grid = createGrid(); // Create a fresh grid
+                 calculatePixelPath(); // Recalculate path and mark grid
+                 // Reset state flags
+                 gameOver = false;
+                 gamePaused = false;
+                 waveInProgress = false;
+                 placingTowerType = null;
+                 selectedTower = null;
+                 timeSinceWaveEnd = 0;
+                 frameCount = 0;
+
+                 // Update UI and restart loop
+                 updateUI();
+                 console.log("DEBUG: Game reset complete. Restarting loop.");
+                 requestAnimationFrame(gameLoop); // Start the loop again
+             }
+
 
             // --- Start the Game ---
             console.log("DEBUG: Starting game initialization..."); // DEBUG LOG
