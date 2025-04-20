@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Tower Defense V10.5</title>
+    <title>Pixel Tower Defense V10.8 (Debug)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        /* Styles unchanged from V10.4 */
+        /* Styles unchanged */
         body { font-family: 'Press Start 2P', cursive; background-color: #1a1a1a; color: #e0e0e0; display: flex; justify-content: flex-start; align-items: center; min-height: 100vh; flex-direction: column; overflow-x: hidden; padding: 1rem; }
         canvas { display: block; border: 4px solid #555; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); cursor: pointer; width: 100%; height: auto; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
         .game-container { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 1000px; padding: 10px; }
@@ -55,7 +55,7 @@
 </head>
 <body>
     <div class="game-container">
-        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V10.5</h1>
+        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V10.8 (Debug)</h1>
         <div id="game-layout">
             <div class="canvas-container"> <canvas id="gameCanvas" width="600" height="400"></canvas> </div>
             <div class="control-panel">
@@ -89,8 +89,11 @@
 
     <script>
         window.onload = function() {
+            console.log("DEBUG: window.onload fired");
             const canvas = document.getElementById('gameCanvas');
+            if (!canvas) { console.error("ERROR: Canvas element not found!"); return; } // Early exit if canvas missing
             const ctx = canvas.getContext('2d');
+            if (!ctx) { console.error("ERROR: Canvas context not found!"); return; } // Early exit if context fails
 
             // --- Game Configuration ---
             const TILE_SIZE = 40; const BASE_CANVAS_WIDTH = 600; const BASE_CANVAS_HEIGHT = 400;
@@ -100,18 +103,18 @@
             const SELL_PERCENTAGE = 0.7; const INTEREST_RATE = 0.05;
             const POISON_TICK_RATE = 30; const PHYSICAL_ARMOR_REDUCTION = 0.5;
             const WAVE_SKIP_BONUS = 5; const BOSS_WAVE_INTERVAL = 10;
-            const MESSAGE_DURATION = 4000; // 4 seconds for auto-hide message
+            const MESSAGE_DURATION = 4000;
 
             // --- Enemy Configuration ---
             const ENEMY_TYPES = {
                 'normal': { name: 'Goblin', baseHealth: 30, speed: 1, color: '#28a745', shape: 'circle', sizeFactor: 1.0, armorType: null, isCamo: false, description: "Standard cannon fodder." },
                 'fast':   { name: 'Runner', baseHealth: 21, speed: 1.8, color: '#ffeb3b', shape: 'rect', sizeFactor: 0.9, armorType: null, isCamo: false, description: "Quick but fragile." },
                 'armored':{ name: 'Knight', baseHealth: 50, speed: 0.8, color: '#9E9E9E', shape: 'hexagon', sizeFactor: 1.1, armorType: 'physical', isCamo: false, description: "Slow and tough. Resists physical bullets/lasers." },
-                'camo':   { name: 'Ghost', baseHealth: 25, speed: 1.2, color: '#E0E0E0', shape: 'circle', sizeFactor: 1.0, armorType: null, isCamo: true, description: "Invisible to most towers unless detected." }, // Camo enemy
+                'camo':   { name: 'Ghost', baseHealth: 25, speed: 1.2, color: '#E0E0E0', shape: 'circle', sizeFactor: 1.0, armorType: null, isCamo: true, description: "Invisible to most towers unless detected." },
                 'boss':   { name: 'Warlord', baseHealth: 500, speed: 0.6, color: '#B71C1C', shape: 'boss_shape', sizeFactor: 1.8, armorType: 'physical', isCamo: false, description: "Huge threat! High health & resists physical." }
             };
             const ENEMY_HEALTH_INCREMENT = 15;
-            const FAST_ENEMY_CHANCE = 0.18; const FAST_ENEMY_START_WAVE = 3; // Adjusted chances slightly
+            const FAST_ENEMY_CHANCE = 0.18; const FAST_ENEMY_START_WAVE = 3;
             const ARMORED_ENEMY_CHANCE = 0.12; const ARMORED_ENEMY_START_WAVE = 5;
             const CAMO_ENEMY_CHANCE = 0.15; const CAMO_ENEMY_START_WAVE = 7;
 
@@ -124,28 +127,49 @@
                  'poison': { name: "Acid Spitter", cost: 80, range: 110, damage: 2, fireRate: 55, color: '#228B22', shape: 'vial', projectile: 'poison_dart', detectsCamo: false, maxLevel: 2, poisonDamage: 4, poisonDuration: 180, upgradeCosts: [100], upgradeStats: [{ poisonDamage: 6, poisonDuration: 240 }], description: "Applies poison dealing damage over time, bypasses armor." },
                  'money': { name: "Generator", cost: 100, range: 0, damage: 0, fireRate: 300, color: '#DAA520', shape: 'dollar', projectile: null, detectsCamo: false, maxLevel: 2, incomeAmount: 5, upgradeCosts: [150], upgradeStats: [{ incomeAmount: 8, fireRate: 240 }], description: "Generates passive income periodically." },
                  'amplifier': { name: "Amp Tower", cost: 120, range: 0, damage: 0, fireRate: 0, color: '#ff69b4', shape: 'amplifier', projectile: null, detectsCamo: false, maxLevel: 2, boostRadius: 70, boostFactor: 1.2, upgradeCosts: [180], upgradeStats: [{ boostFactor: 1.3, boostRadius: 80 }], description: "Boosts damage of nearby attack towers." },
-                 'detector': { name: "Radar Dish", cost: 70, range: 0, damage: 0, fireRate: 0, color: '#777', shape: 'detector', projectile: null, detectsCamo: false, /* Note: 'detectsCamo' here means the tower itself can see camo, which this one can't */ maxLevel: 1, // No upgrades for now
-                                 detectionRadius: 120, // Radius it reveals camo enemies
-                                 description: "Reveals nearby Camo enemies, allowing other towers to target them."}
+                 'detector': { name: "Radar Dish", cost: 70, range: 0, damage: 0, fireRate: 0, color: '#777', shape: 'detector', projectile: null, detectsCamo: false, maxLevel: 1, detectionRadius: 120, description: "Reveals nearby Camo enemies, allowing other towers to target them."}
              };
 
             // --- Game State ---
             let money = STARTING_MONEY; let score = 0; let lives = STARTING_LIVES; let wave = 0;
             let enemies = []; let towers = []; let projectiles = []; let effects = [];
-            let grid = createGrid(); let path = [];
+            let grid = createGrid(); // Create grid early
+            let path = [];
             let placingTowerType = null; let selectedTower = null;
             let mouse = { x: 0, y: 0 }; let scaledMouse = { x: 0, y: 0 };
             let waveInProgress = false; let enemiesToSpawn = 0; let spawnTimer = 0;
             let frameCount = 0; let gameOver = false; let gamePaused = false;
             let scaleX = 1, scaleY = 1; let timeSinceWaveEnd = 0;
-            let messageTimeout = null; // Timer for auto-hiding message box
+            let messageTimeout = null;
 
-            // --- UI Elements --- /* ... V10 ... */
-            const moneyDisplay=document.getElementById('money');const scoreDisplay=document.getElementById('score');const livesDisplay=document.getElementById('lives');const waveDisplay=document.getElementById('wave');const startWaveBtn=document.getElementById('startWaveBtn');const sellTowerBtn=document.getElementById('sellTowerBtn');const upgradeTowerBtn=document.getElementById('upgradeTowerBtn');const towerButtons=document.querySelectorAll('.tower-button');const targetButtons=document.querySelectorAll('.target-button');const towerActionsDiv=document.getElementById('towerActions');const targetingControlsDiv=document.getElementById('targetingControls');const messageBox=document.getElementById('messageBox');const messageText=document.getElementById('messageText');/*Removed messageBtn*/const towerDescDiv=document.getElementById('tower-descriptions');const enemyDescDiv=document.getElementById('enemy-descriptions');
+            // --- UI Elements ---
+            // Ensure elements exist before proceeding
+             const moneyDisplay = document.getElementById('money');
+             const scoreDisplay = document.getElementById('score');
+             const livesDisplay = document.getElementById('lives');
+             const waveDisplay = document.getElementById('wave');
+             const startWaveBtn = document.getElementById('startWaveBtn');
+             const sellTowerBtn = document.getElementById('sellTowerBtn');
+             const upgradeTowerBtn = document.getElementById('upgradeTowerBtn');
+             const towerButtonsNodeList = document.querySelectorAll('.tower-button'); // Use NodeList directly in listener setup
+             const targetButtons = document.querySelectorAll('.target-button');
+             const towerActionsDiv = document.getElementById('towerActions');
+             const targetingControlsDiv = document.getElementById('targetingControls');
+             const messageBox = document.getElementById('messageBox');
+             const messageText = document.getElementById('messageText');
+             const towerDescDiv = document.getElementById('tower-descriptions');
+             const enemyDescDiv = document.getElementById('enemy-descriptions');
+
+             // Check if crucial elements were found
+             if (!moneyDisplay || !scoreDisplay || !livesDisplay || !waveDisplay || !startWaveBtn || !sellTowerBtn || !upgradeTowerBtn || !towerActionsDiv || !targetingControlsDiv || !messageBox || !messageText || !towerDescDiv || !enemyDescDiv) {
+                 console.error("ERROR: One or more UI elements were not found! Check HTML IDs.");
+                 return; // Stop execution if UI is broken
+             }
+
 
             // --- Path Definition ---
             const pathPoints = [ { x: 0, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 7 }, { x: 10, y: 7 }, { x: 10, y: 4 }, { x: 14, y: 4 } ];
-            calculatePixelPath();
+            calculatePixelPath(); // Calculate path after grid exists
 
             // --- Initialization ---
             populateDescriptions(); updateCanvasScale(); updateUI(); setupEventListeners();
@@ -161,116 +185,145 @@
                  if (placingTowerType) drawTowerPlacementPreview();
              }
 
-             // --- Background, Grid and Path --- (Unchanged)
+             // --- Background, Grid and Path ---
              function drawBackground() { /* ... V9 ... */ const cX=BASE_CANVAS_WIDTH/2,cY=BASE_CANVAS_HEIGHT/2;const oR=Math.sqrt(cX*cX+cY*cY);const g=ctx.createRadialGradient(cX,cY,0,cX,cY,oR);g.addColorStop(0,'#3a3a3a');g.addColorStop(1,'#2a2a2a');ctx.fillStyle=g;ctx.fillRect(0,0,BASE_CANVAS_WIDTH,BASE_CANVAS_HEIGHT);}
              function createGrid() { /* ... V9 ... */ const g=[];for(let y=0;y<GRID_HEIGHT;y++){g[y]=[];for(let x=0;x<GRID_WIDTH;x++)g[y][x]={type:'empty',tower:null}}return g;}
-             function calculatePixelPath() { /* ... V9 ... */ path=[];if(pathPoints.length===0)return;let tD=0;const w=[];w.push({x:pathPoints[0].x*TILE_SIZE-TILE_SIZE,y:pathPoints[0].y*TILE_SIZE+TILE_SIZE/2,dist:0});for(let i=0;i<pathPoints.length;i++){const p=pathPoints[i];const x=p.x*TILE_SIZE+TILE_SIZE/2;const y=p.y*TILE_SIZE+TILE_SIZE/2;const pW=w[w.length-1];const sD=getDistance(pW,{x,y});tD+=sD;w.push({x,y,dist:tD});if(i>0){const pP=pathPoints[i-1];if(p.x===pP.x){const sY=Math.min(p.y,pP.y),eY=Math.max(p.y,pP.y);for(let py=sY;py<=eY;py++)if(grid[py]?.[p.x])grid[py][p.x].type='path'}else{const sX=Math.min(p.x,pP.x),eX=Math.max(p.x,pP.x);for(let px=sX;px<=eX;px++)if(grid[p.y]?.[px])grid[p.y][px].type='path'}}else{if(grid[p.y]?.[p.x])grid[p.y][p.x].type='path'}}const lGP=pathPoints[pathPoints.length-1];const eX=(lGP.x+1)*TILE_SIZE+TILE_SIZE;const eY=lGP.y*TILE_SIZE+TILE_SIZE/2;const lW=w[w.length-1];tD+=getDistance(lW,{x:eX,y:eY});w.push({x:eX,y:eY,dist:tD});path=w;}
+             function calculatePixelPath() { // Added bounds check
+                 path = []; if (pathPoints.length === 0) return;
+                 let totalDistance = 0; const waypoints = [];
+                 waypoints.push({ x: pathPoints[0].x * TILE_SIZE - TILE_SIZE, y: pathPoints[0].y * TILE_SIZE + TILE_SIZE / 2, dist: 0 });
+                 for (let i = 0; i < pathPoints.length; i++) {
+                     const point = pathPoints[i]; const x = point.x * TILE_SIZE + TILE_SIZE / 2; const y = point.y * TILE_SIZE + TILE_SIZE / 2;
+                     const prevWaypoint = waypoints[waypoints.length - 1]; const segmentDist = getDistance(prevWaypoint, {x, y}); totalDistance += segmentDist;
+                     waypoints.push({ x, y, dist: totalDistance });
+                     // Mark grid - check bounds before access
+                     if (i > 0) {
+                         const prevPoint = pathPoints[i - 1];
+                         if (point.x === prevPoint.x) { // Vertical
+                             const startY = Math.min(point.y, prevPoint.y); const endY = Math.max(point.y, prevPoint.y);
+                             for (let py = startY; py <= endY; py++) {
+                                 if (py >= 0 && py < GRID_HEIGHT && point.x >= 0 && point.x < GRID_WIDTH && grid[py]?.[point.x]) {
+                                     grid[py][point.x].type = 'path';
+                                 }
+                             }
+                         } else { // Horizontal
+                             const startX = Math.min(point.x, prevPoint.x); const endX = Math.max(point.x, prevPoint.x);
+                             for (let px = startX; px <= endX; px++) {
+                                 if (point.y >= 0 && point.y < GRID_HEIGHT && px >= 0 && px < GRID_WIDTH && grid[point.y]?.[px]) {
+                                     grid[point.y][px].type = 'path';
+                                 }
+                             }
+                         }
+                     } else { // First point
+                          if (point.y >= 0 && point.y < GRID_HEIGHT && point.x >= 0 && point.x < GRID_WIDTH && grid[point.y]?.[point.x]) {
+                             grid[point.y][point.x].type = 'path';
+                         }
+                     }
+                 }
+                 const lastGridPoint = pathPoints[pathPoints.length - 1]; const endX=(lastGridPoint.x + 1) * TILE_SIZE + TILE_SIZE; const endY = lastGridPoint.y * TILE_SIZE + TILE_SIZE / 2;
+                 const lastWaypoint = waypoints[waypoints.length-1]; totalDistance += getDistance(lastWaypoint, {x: endX, y: endY});
+                 waypoints.push({ x: endX, y: endY, dist: totalDistance }); path = waypoints;
+             }
              function drawGrid() { /* ... V9 ... */ ctx.strokeStyle='rgba(85,85,85,0.3)';ctx.lineWidth=1;for(let y=0;y<GRID_HEIGHT;y++)for(let x=0;x<GRID_WIDTH;x++)ctx.strokeRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE);}
              function drawPath() { /* ... V9 ... */ if(path.length<2)return;const pWO=TILE_SIZE*0.85;const pWI=TILE_SIZE*0.7;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#5a3a2a';ctx.lineWidth=pWO;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();ctx.strokeStyle='#a07050';ctx.lineWidth=pWI;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();}
 
-             // --- Enemy Handling ---
+             // --- Enemy Handling --- (Unchanged)
             function spawnEnemy() { /* ... V10 ... */ let eTK='normal';let rR=Math.random();if(wave%BOSS_WAVE_INTERVAL===0&&wave>0){eTK='boss'}else{let cC=0;if(wave>=ARMORED_ENEMY_START_WAVE){cC+=ARMORED_ENEMY_CHANCE;if(rR<cC)eTK='armored'}if(eTK==='normal'&&wave>=CAMO_ENEMY_START_WAVE){cC+=CAMO_ENEMY_CHANCE;if(rR<cC)eTK='camo'}if(eTK==='normal'&&wave>=FAST_ENEMY_START_WAVE){cC+=FAST_ENEMY_CHANCE;if(rR<cC)eTK='fast'}}const eC=ENEMY_TYPES[eTK];let h=eC.baseHealth;if(eTK==='boss')h+=((wave)/BOSS_WAVE_INTERVAL)*ENEMY_HEALTH_INCREMENT*BOSS_WAVE_INTERVAL*1.5;else h+=(wave-1)*ENEMY_HEALTH_INCREMENT;enemies.push({x:path[0].x,y:path[0].y,health:h,maxHealth:h,speed:eC.speed,pathIndex:1,size:TILE_SIZE*.4*eC.sizeFactor,color:eC.color,type:eTK,shape:eC.shape,armorType:eC.armorType,isCamo:eC.isCamo,isDetected:false,speedMultiplier:1,slowTimer:0,poisonEffects:[],distanceTraveled:0});if(eTK==='boss')enemiesToSpawn=0;}
-            function handleEnemies() { // Added console log for lives check
-                 const dTs=towers.filter(t=>t.type==='detector');
-                 enemies.forEach(e=>{if(e.isCamo){e.isDetected=false;for(const d of dTs){if(getDistanceSq(e,d)<=d.detectionRadius*d.detectionRadius){e.isDetected=true;break}}}else{e.isDetected=true}});
-
-                 for (let i = enemies.length - 1; i >= 0; i--) {
-                     const e = enemies[i];
-                     if (e.health <= 0) { money+=5+Math.floor(wave/5);score+=10;updateUI();addEffect(e.x,e.y,e.size*1.5,e.color,'death_fade');enemies.splice(i,1);continue; }
-                     if (e.slowTimer > 0) { e.slowTimer--; if (e.slowTimer <= 0) e.speedMultiplier = 1; }
-                     for (let j = e.poisonEffects.length - 1; j >= 0; j--) { const p=e.poisonEffects[j]; p.timer--; p.tickTimer--; if (p.tickTimer <= 0 && p.timer > 0) { e.health -= p.damage; p.tickTimer = POISON_TICK_RATE; } if (p.timer <= 0) e.poisonEffects.splice(j, 1); }
-                     if (e.health <= 0) continue;
-                     const effSp = e.speed * e.speedMultiplier;
-                     if (e.pathIndex < path.length) { const tP=path[e.pathIndex]; const dx=tP.x-e.x, dy=tP.y-e.y; const dWSq=dx*dx+dy*dy; let mD=effSp; if (dWSq<mD*mD) { mD=Math.sqrt(dWSq); e.x=tP.x; e.y=tP.y; e.pathIndex++; } else { const dW=Math.sqrt(dWSq); e.x+=(dx/dW)*mD; e.y+=(dy/dW)*mD; } e.distanceTraveled+=mD; }
-                     else { // Enemy reached end
-                         const livesBefore = lives; // Log before decrement
-                         lives--;
-                         console.log(`Enemy reached end! PathIndex: ${e.pathIndex}, Path Length: ${path.length}. Lives before: ${livesBefore}, Lives after: ${lives}`); // DEBUG LOG
-                         updateUI();
-                         enemies.splice(i, 1);
-                         if (lives <= 0) {
-                             lives = 0; // Prevent negative lives display
-                             endGame(false);
-                         }
-                         continue; // Skip rest of loop for this enemy
-                     }
-                 }
-             }
+            function handleEnemies() { /* ... V10.7 ... */ const dTs=towers.filter(t=>t.type==='detector');enemies.forEach(e=>{if(e.isCamo){e.isDetected=false;for(const d of dTs){if(getDistanceSq(e,d)<=d.detectionRadius*d.detectionRadius){e.isDetected=true;break}}}else{e.isDetected=true}});for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(e.health<=0){money+=5+Math.floor(wave/5);score+=10;updateUI();addEffect(e.x,e.y,e.size*1.5,e.color,'death_fade');enemies.splice(i,1);continue}if(e.slowTimer>0){e.slowTimer--;if(e.slowTimer<=0)e.speedMultiplier=1}for(let j=e.poisonEffects.length-1;j>=0;j--){const p=e.poisonEffects[j];p.timer--;p.tickTimer--;if(p.tickTimer<=0&&p.timer>0){e.health-=p.damage;p.tickTimer=POISON_TICK_RATE}if(p.timer<=0)e.poisonEffects.splice(j,1)}if(e.health<=0)continue;const effSp=e.speed*e.speedMultiplier;if(e.pathIndex<path.length){const tP=path[e.pathIndex];const dx=tP.x-e.x,dy=tP.y-e.y;const dWSq=dx*dx+dy*dy;let mD=effSp;if(dWSq<mD*mD){mD=Math.sqrt(dWSq);e.x=tP.x;e.y=tP.y;e.pathIndex++}else{const dW=Math.sqrt(dWSq);e.x+=(dx/dW)*mD;e.y+=(dy/dW)*mD}e.distanceTraveled+=mD}else{const livesBefore=lives;lives--;console.log(`DEBUG: Enemy reached end! PathIndex:${e.pathIndex}, Path Length:${path.length}. Lives before:${livesBefore}, Lives after:${lives}`);updateUI();enemies.splice(i,1);if(lives<=0){lives=0;endGame(false)}continue}}}
             function drawEnemies() { /* ... V10 ... */ enemies.forEach(e=>{ctx.globalAlpha=(e.isCamo&&!e.isDetected)?0.4:1.0;ctx.fillStyle=e.color;let bC='#1e7e34';if(e.poisonEffects.length>0)bC='#800080';if(e.speedMultiplier<1)bC='#007bff';ctx.strokeStyle=bC;ctx.lineWidth=2;ctx.beginPath();if(e.shape==='rect'){const cr=e.size*0.3,w=e.size,h=e.size*1.2;ctx.moveTo(e.x-w+cr,e.y-h);ctx.lineTo(e.x+w-cr,e.y-h);ctx.arcTo(e.x+w,e.y-h,e.x+w,e.y-h+cr,cr);ctx.lineTo(e.x+w,e.y+h-cr);ctx.arcTo(e.x+w,e.y+h,e.x+w-cr,e.y+h,cr);ctx.lineTo(e.x-w+cr,e.y+h);ctx.arcTo(e.x-w,e.y+h,e.x-w,e.y+h-cr,cr);ctx.lineTo(e.x-w,e.y-h+cr);ctx.arcTo(e.x-w,e.y-h,e.x-w+cr,e.y-h,cr);ctx.closePath()}else if(e.shape==='hexagon'){const s=e.size*1.2;ctx.moveTo(e.x+s,e.y);for(let i=1;i<=6;i++)ctx.lineTo(e.x+s*Math.cos(i*2*Math.PI/6),e.y+s*Math.sin(i*2*Math.PI/6));ctx.closePath()}else if(e.shape==='boss_shape'){const s=e.size*1.3,spikes=8,angle=Math.PI*2/spikes;ctx.beginPath();for(let i=0;i<spikes;i++){const x1=e.x+s*Math.cos(angle*i);const y1=e.y+s*Math.sin(angle*i);const x2=e.x+s*0.7*Math.cos(angle*i+angle/2);const y2=e.y+s*0.7*Math.sin(angle*i+angle/2);if(i===0)ctx.moveTo(x1,y1);else ctx.lineTo(x1,y1);ctx.lineTo(x2,y2);}ctx.closePath();}else{ctx.arc(e.x,e.y,e.size,0,Math.PI*2)}ctx.fill();ctx.stroke();const hBW=e.size*2,hBH=5,hP=e.health/e.maxHealth;ctx.fillStyle='#555';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW,hBH);ctx.fillStyle='#dc3545';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW*hP,hBH);ctx.globalAlpha=1.0;});}
 
-            // --- Tower Handling ---
-             function canPlaceTower(gridX, gridY, towerType) { // Corrected bounds check
-                 const config = TOWER_TYPES[towerType];
-                 if (!config) { /*console.log("Invalid tower type config");*/ return false; }
-                 if (gridY < 0 || gridY >= GRID_HEIGHT || gridX < 0 || gridX >= GRID_WIDTH) { /*console.log("Placement out of bounds");*/ return false; }
-                 if (!grid[gridY] || !grid[gridY][gridX]) { console.error("Grid cell access error despite bounds check?"); return false; }
-                 if (grid[gridY][gridX].type !== 'empty') { /*console.log("Cell not empty");*/ return false; }
-                 if (money < config.cost) { /*console.log("Not enough money");*/ return false; }
-                 return true;
-             }
+            // --- Tower Handling --- (Unchanged)
+             function canPlaceTower(gridX, gridY, towerType) { /* ... V10.3 Func ... */ const config=TOWER_TYPES[towerType];if(!config)return false;if(gridY<0||gridY>=GRID_HEIGHT||gridX<0||gridX>=GRID_WIDTH)return false;if(!grid[gridY]||!grid[gridY][gridX]||grid[gridY][gridX].type!=='empty')return false;if(money<config.cost)return false;return true;}
              function placeTower(gridX, gridY) { /* ... V10 Func ... */ if(!placingTowerType)return;const c=TOWER_TYPES[placingTowerType];if(!c||!canPlaceTower(gridX,gridY,placingTowerType))return;money-=c.cost;const tX=gridX*TILE_SIZE+TILE_SIZE/2,tY=gridY*TILE_SIZE+TILE_SIZE/2;const nT={x:tX,y:tY,gridX:gridX,gridY:gridY,range:c.range,damage:c.damage,fireRate:c.fireRate,slowFactor:c.slowFactor,slowDuration:c.slowDuration,splashRadius:c.splashRadius,poisonDamage:c.poisonDamage,poisonDuration:c.poisonDuration,incomeAmount:c.incomeAmount,boostRadius:c.boostRadius,boostFactor:c.boostFactor,detectionRadius:c.detectionRadius,detectsCamo:c.detectsCamo,fireCooldown:0,target:null,type:placingTowerType,level:1,maxLevel:c.maxLevel,totalCost:c.cost,targetingPriority:'first',isFiring:false,firingTimer:0};towers.push(nT);grid[gridY][gridX].type='tower';grid[gridY][gridX].tower=nT;deselectTowerPurchase();updateUI();}
-             function handleTowers() { /* ... V10 Func ... */ let boosts=calculateAmplifierBoosts();towers.forEach(t=>{if(t.firingTimer>0)t.firingTimer--;else t.isFiring=false;if(t.fireCooldown>0)t.fireCooldown--;if(t.type==='money'){if(t.fireCooldown<=0){money+=t.incomeAmount;t.fireCooldown=t.fireRate;updateUI();addEffect(t.x,t.y-TILE_SIZE*0.5,10,'#FFD700','text',`+$${t.incomeAmount}`)}}else if(t.type==='slow'){if(t.fireCooldown<=0){applySlowEffect(t);t.fireCooldown=t.fireRate;t.isFiring=true;t.firingTimer=5}}else if(t.type==='amplifier'||t.type==='detector'){}else{const rangeSq=t.range*t.range;if(!t.target||t.target.health<=0||getDistanceSq(t,t.target)>rangeSq||(t.target.isCamo&&!t.target.isDetected&&!t.detectsCamo))t.target=findTargetBasedOnPriority(t);if(t.fireCooldown<=0&&t.target){let boost=boosts[`${t.gridX},${t.gridY}`]||1.0;fireProjectile(t,t.target,boost);t.fireCooldown=t.fireRate;t.isFiring=true;t.firingTimer=5}}});}
+             function handleTowers() { /* ... V10 Func (Animations Removed) ... */ let boosts=calculateAmplifierBoosts();towers.forEach(t=>{if(t.fireCooldown>0)t.fireCooldown--;if(t.type==='money'){if(t.fireCooldown<=0){money+=t.incomeAmount;t.fireCooldown=t.fireRate;updateUI();addEffect(t.x,t.y-TILE_SIZE*0.5,10,'#FFD700','text',`+$${t.incomeAmount}`)}}else if(t.type==='slow'){if(t.fireCooldown<=0){applySlowEffect(t);t.fireCooldown=t.fireRate;}}else if(t.type==='amplifier'||t.type==='detector'){}else{const rangeSq=t.range*t.range;if(!t.target||t.target.health<=0||getDistanceSq(t,t.target)>rangeSq||(t.target.isCamo&&!t.target.isDetected&&!t.detectsCamo))t.target=findTargetBasedOnPriority(t);if(t.fireCooldown<=0&&t.target){let boost=boosts[`${t.gridX},${t.gridY}`]||1.0;fireProjectile(t,t.target,boost);t.fireCooldown=t.fireRate;}}});}
              function calculateAmplifierBoosts() { /* ... V9 Func ... */ let b={};towers.filter(t=>t.type==='amplifier').forEach(a=>{const bRSq=a.boostRadius*a.boostRadius;towers.forEach(tT=>{if(tT!==a&&tT.damage>0){if(getDistanceSq(a,tT)<=bRSq){const k=`${tT.gridX},${tT.gridY}`;b[k]=Math.max(b[k]||1.0,a.boostFactor)}}})});return b;}
              function applySlowEffect(tower) { /* ... V8 Func ... */ const rSq=tower.range*tower.range;enemies.forEach(e=>{if(getDistanceSq(tower,e)<=rSq){e.speedMultiplier=tower.slowFactor;e.slowTimer=tower.slowDuration}});}
              function findTargetBasedOnPriority(tower) { /* ... V10 Func ... */ const rSq=tower.range*tower.range;const tC=TOWER_TYPES[tower.type];let pT=enemies.filter(e=>{if(getDistanceSq(tower,e)>rSq)return false;if(e.isCamo&&!e.isDetected&&!tC.detectsCamo)return false;return true});if(pT.length===0)return null;switch(tower.targetingPriority){case'first':pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break;case'last':pT.sort((a,b)=>a.distanceTraveled-b.distanceTraveled);break;case'strongest':pT.sort((a,b)=>b.health-a.health);break;case'weakest':pT.sort((a,b)=>a.health-b.health);break;default:pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break}return pT[0];}
-             function drawTowers() { /* ... V10 Func ... */ towers.forEach(t=>{const c=TOWER_TYPES[t.type];const tS=TILE_SIZE*.3+(t.level-1)*2;const x=t.x,y=t.y;ctx.save();ctx.translate(x,y);let sF=1.0;if(t.isFiring&&t.firingTimer>0)sF=1.0-(Math.sin((5-t.firingTimer)/5*Math.PI)*.1);ctx.scale(sF,sF);let pF=1.0;if(t.type==='slow')pF=1.0+Math.sin(frameCount*.05)*.05;ctx.fillStyle=c.color;ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();if(c.shape==='rect'){const bS=tS*1.8*pF;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.strokeStyle='#222';ctx.beginPath();ctx.rect(-bS*.15,-bS*.6,bS*.3,bS*.4);ctx.fill();ctx.stroke()}else if(c.shape==='triangle'){const sz=tS*1.4*pF;ctx.moveTo(0,-sz*.8);ctx.lineTo(-sz,sz*.4);ctx.lineTo(sz,sz*.4);ctx.closePath();ctx.fill();ctx.stroke();const cP=1.0+Math.sin(frameCount*.1)*.1;ctx.fillStyle=`rgba(255,255,255,${.8+Math.sin(frameCount*.1)*.2})`;ctx.beginPath();ctx.arc(0,0,sz*.2*cP,0,Math.PI*2);ctx.fill()}else if(c.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=tS*1.5*pF,iR=tS*.7*pF;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath();ctx.fill();ctx.stroke()}else if(c.shape==='mortar'){const mS=tS*1.6*pF;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*.5,0,Math.PI*2);ctx.fill()}else if(c.shape==='vial'){const vS=tS*1.8*pF;ctx.rect(-vS*.4,-vS*.5,vS*.8,vS);ctx.rect(-vS*.2,-vS*.7,vS*.4,vS*.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*.35,-vS*.4,vS*.7,vS*.8);ctx.fill()}else if(c.shape==='dollar'){const dS=tS*2.5*pF;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);ctx.strokeStyle=c.color;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,dS*.6,0,Math.PI*2);ctx.stroke();}else if(c.shape==='amplifier'){const aS=tS*1.5*pF;const nL=8,ang=Math.PI*2/nL;ctx.beginPath();ctx.arc(0,0,aS*.8,0,Math.PI*2);ctx.fill();ctx.stroke();const lP=1.0+Math.sin(frameCount*.08)*.1;ctx.strokeStyle=c.color;ctx.lineWidth=2;for(let i=0;i<nL;i++){const cA=ang*i;const sX=Math.cos(cA)*aS*.8,sY=Math.sin(cA)*aS*.8;const eX=Math.cos(cA)*aS*1.2*lP,eY=Math.sin(cA)*aS*1.2*lP;ctx.beginPath();ctx.moveTo(sX,sY);ctx.lineTo(eX,eY);ctx.stroke();}}else if(c.shape==='detector'){const dS=tS*1.7*pF;ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-dS*.1,dS*.3,dS*.2,dS*.4);ctx.fill();ctx.stroke();ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8);ctx.fill();ctx.stroke();const pR=(frameCount%60)/60*dS*1.5;ctx.strokeStyle='rgba(0,255,255,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,pR,0,Math.PI*2);ctx.stroke();}else{ctx.arc(0,0,tS*pF,0,Math.PI*2);ctx.fill();ctx.stroke()}ctx.restore();if(selectedTower===t){ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.beginPath();const rTD=t.type==='amplifier'?t.boostRadius:t.type==='detector'?t.detectionRadius:t.range;if(rTD>0){ctx.arc(x,y,rTD,0,Math.PI*2);ctx.stroke()}}if(t.level>1){ctx.fillStyle='yellow';ctx.font=`${TILE_SIZE*.5}px 'Press Start 2P'`;const sS=5,sSp=7;const tW=(t.level-1)*sSp;const sX=x-tW/2+sS/2;for(let i=1;i<t.level;i++){const starX=sX+(i-1)*sSp;const starY=y-tS-10;ctx.fillText('*',starX-sS/2,starY+sS/2)}}});}
-             function drawTowerPlacementPreview() { /* ... V10 Func ... */ const gX=Math.floor(scaledMouse.x/TILE_SIZE),gY=Math.floor(scaledMouse.y/TILE_SIZE);if(gX<0||gX>=GRID_WIDTH||gY<0||gY>=GRID_HEIGHT||!placingTowerType){return}if(typeof gridY!=='number'||isNaN(gridY)||typeof gridX!=='number'||isNaN(gridX)){console.error(`Invalid grid coords in preview: X=${gridX}, Y=${gridY}`);return}const pX=gX*TILE_SIZE+TILE_SIZE/2,pY=gridY*TILE_SIZE+TILE_SIZE/2;const config=TOWER_TYPES[placingTowerType];if(!config)return;let canPlace=canPlaceTower(gridX,gridY,placingTowerType);ctx.save();ctx.translate(pX,pY);ctx.globalAlpha=0.5;ctx.fillStyle=canPlace?config.color:'red';ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();const pS=TILE_SIZE*0.3;if(config.shape==='rect'){const bS=pS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4)}else if(config.shape==='triangle'){const tS=pS*1.4;ctx.moveTo(0,-tS*0.8);ctx.lineTo(-tS,tS*0.4);ctx.lineTo(tS,tS*0.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,tS*0.2,0,Math.PI*2)}else if(config.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=pS*1.5,iR=pS*0.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath()}else if(config.shape==='mortar'){const mS=pS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*0.5,0,Math.PI*2)}else if(config.shape==='vial'){const vS=pS*1.8;ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS);ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8)}else if(config.shape==='dollar'){const dS=pS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0)}else if(config.shape==='amplifier'){const aS=pS*1.5;ctx.arc(0,0,aS*0.8,0,Math.PI*2)}else if(config.shape==='detector'){const dS=pS*1.7;ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8)}else{ctx.arc(0,0,pS,0,Math.PI*2)}ctx.fill();ctx.stroke();ctx.restore();const rTD=config.type==='amplifier'?config.boostRadius:config.type==='detector'?config.detectionRadius:config.range;if(rTD>0){ctx.globalAlpha=0.5;ctx.strokeStyle=canPlace?'rgba(255,255,255,0.5)':'rgba(255,0,0,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(pX,pY,rTD,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1.0}}
-             function upgradeSelectedTower() { /* ... V8 Func ... */ if(!selectedTower||selectedTower.level>=selectedTower.maxLevel)return;const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI>=tC.upgradeCosts.length){console.error("...");return}const cost=tC.upgradeCosts[uI];if(money>=cost){money-=cost;selectedTower.level++;selectedTower.totalCost+=cost;const nS=tC.upgradeStats[uI];for(const s in nS)if(selectedTower.hasOwnProperty(s))selectedTower[s]=nS[s];console.log(`Upgraded`);updateUI()}else console.log("...");}
-             function sellSelectedTower() { /* ... V8 Func ... */ if(!selectedTower)return;const r=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);money+=r;const i=towers.indexOf(selectedTower);if(i>-1)towers.splice(i,1);const gX=selectedTower.gridX,gY=selectedTower.gridY;if(grid[gY]?.[gX]){grid[gY][gX].type='empty';grid[gY][gX].tower=null}selectedTower=null;updateUI();}
+             function drawTowers() { /* ... V10 Func (Animations Removed) ... */ towers.forEach(t=>{const c=TOWER_TYPES[t.type];const tS=TILE_SIZE*.3+(t.level-1)*2;const x=t.x,y=t.y;ctx.save();ctx.translate(x,y);ctx.fillStyle=c.color;ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();if(c.shape==='rect'){const bS=tS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.strokeStyle='#222';ctx.beginPath();ctx.rect(-bS*.15,-bS*.6,bS*.3,bS*.4);ctx.fill();ctx.stroke()}else if(c.shape==='triangle'){const sz=tS*1.4;ctx.moveTo(0,-sz*.8);ctx.lineTo(-sz,sz*.4);ctx.lineTo(sz,sz*.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,sz*0.2,0,Math.PI*2);ctx.fill()}else if(c.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=tS*1.5,iR=tS*.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath();ctx.fill();ctx.stroke()}else if(c.shape==='mortar'){const mS=tS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*.5,0,Math.PI*2);ctx.fill()}else if(c.shape==='vial'){const vS=tS*1.8;ctx.rect(-vS*.4,-vS*.5,vS*.8,vS);ctx.rect(-vS*.2,-vS*.7,vS*.4,vS*.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*.35,-vS*.4,vS*.7,vS*.8);ctx.fill()}else if(c.shape==='dollar'){const dS=tS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);ctx.strokeStyle=c.color;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,dS*.6,0,Math.PI*2);ctx.stroke();}else if(c.shape==='amplifier'){const aS=tS*1.5;const nL=8,ang=Math.PI*2/nL;ctx.beginPath();ctx.arc(0,0,aS*.8,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle=c.color;ctx.lineWidth=2;for(let i=0;i<nL;i++){const cA=ang*i;const sX=Math.cos(cA)*aS*.8,sY=Math.sin(cA)*aS*.8;const eX=Math.cos(cA)*aS*1.2,eY=Math.sin(cA)*aS*1.2;ctx.beginPath();ctx.moveTo(sX,sY);ctx.lineTo(eX,eY);ctx.stroke();}}else if(c.shape==='detector'){const dS=tS*1.7;ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-dS*.1,dS*.3,dS*.2,dS*.4);ctx.fill();ctx.stroke();ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8);ctx.fill();ctx.stroke();}else{ctx.arc(0,0,tS,0,Math.PI*2);ctx.fill();ctx.stroke()}ctx.restore();if(selectedTower===t){ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.beginPath();const rTD=t.type==='amplifier'?t.boostRadius:t.type==='detector'?t.detectionRadius:t.range;if(rTD>0){ctx.arc(x,y,rTD,0,Math.PI*2);ctx.stroke()}}if(t.level>1){ctx.fillStyle='yellow';ctx.font=`${TILE_SIZE*.5}px 'Press Start 2P'`;const sS=5,sSp=7;const tW=(t.level-1)*sSp;const sX=x-tW/2+sS/2;for(let i=1;i<t.level;i++){const starX=sX+(i-1)*sSp;const starY=y-tS-10;ctx.fillText('*',starX-sS/2,starY+sS/2)}}});}
+             function drawTowerPlacementPreview() { // Added explicit check for gridX/gridY validity
+                 if (typeof scaledMouse !== 'object' || typeof scaledMouse.x !== 'number' || typeof scaledMouse.y !== 'number' || isNaN(scaledMouse.x) || isNaN(scaledMouse.y)) { return; } // Check scaledMouse validity
+                 const gridX = Math.floor(scaledMouse.x / TILE_SIZE); const gridY = Math.floor(scaledMouse.y / TILE_SIZE);
+                 if (typeof gridY !== 'number' || isNaN(gridY) || typeof gridX !== 'number' || isNaN(gridX)) { console.error(`Invalid grid coords calculated in preview: X=${gridX}, Y=${gridY}`); return; } // Check calculated grid coords
+                 if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT || !placingTowerType) { return; } // Check bounds and type
+                 const pX=gridX*TILE_SIZE+TILE_SIZE/2,pY=gridY*TILE_SIZE+TILE_SIZE/2; const config=TOWER_TYPES[placingTowerType]; if(!config)return; let canPlace=canPlaceTower(gridX,gridY,placingTowerType);
+                 ctx.save();ctx.translate(pX,pY);ctx.globalAlpha=0.5; ctx.fillStyle=canPlace?config.color:'red';ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath(); const pS=TILE_SIZE*0.3;
+                 // Drawing logic (unchanged from V10)
+                 if(config.shape==='rect'){const bS=pS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4)}else if(config.shape==='triangle'){const tS=pS*1.4;ctx.moveTo(0,-tS*0.8);ctx.lineTo(-tS,tS*0.4);ctx.lineTo(tS,tS*0.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,tS*0.2,0,Math.PI*2)}else if(config.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=pS*1.5,iR=pS*0.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath()}else if(config.shape==='mortar'){const mS=pS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*0.5,0,Math.PI*2)}else if(config.shape==='vial'){const vS=pS*1.8;ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS);ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8)}else if(config.shape==='dollar'){const dS=pS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0)}else if(config.shape==='amplifier'){const aS=pS*1.5;ctx.arc(0,0,aS*0.8,0,Math.PI*2)}else if(config.shape==='detector'){const dS=pS*1.7;ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8)}else{ctx.arc(0,0,pS,0,Math.PI*2)}
+                 ctx.fill();ctx.stroke();ctx.restore();
+                 const rTD=config.type==='amplifier'?config.boostRadius:config.type==='detector'?config.detectionRadius:config.range; if(rTD>0){ctx.globalAlpha=0.5;ctx.strokeStyle=canPlace?'rgba(255,255,255,0.5)':'rgba(255,0,0,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(pX,pY,rTD,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1.0}
+             }
+            function upgradeSelectedTower() { /* ... V8 Func ... */ if(!selectedTower||selectedTower.level>=selectedTower.maxLevel)return;const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI>=tC.upgradeCosts.length){console.error("...");return}const cost=tC.upgradeCosts[uI];if(money>=cost){money-=cost;selectedTower.level++;selectedTower.totalCost+=cost;const nS=tC.upgradeStats[uI];for(const s in nS)if(selectedTower.hasOwnProperty(s))selectedTower[s]=nS[s];console.log(`Upgraded`);updateUI()}else console.log("...");}
+            function sellSelectedTower() { /* ... V8 Func ... */ if(!selectedTower)return;const r=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);money+=r;const i=towers.indexOf(selectedTower);if(i>-1)towers.splice(i,1);const gX=selectedTower.gridX,gY=selectedTower.gridY;if(grid[gY]?.[gX]){grid[gY][gX].type='empty';grid[gY][gX].tower=null}selectedTower=null;updateUI();}
 
             // --- Projectile Handling --- (Unchanged)
             function fireProjectile(tower, target, boost=1.0) { /* ... V10 Func ... */ const c=TOWER_TYPES[tower.type];projectiles.push({x:tower.x,y:tower.y,damage:tower.damage*boost,target:target,speed:6,size:4,color:c.color||'yellow',type:tower.type,projectileType:c.projectile,splashRadius:tower.splashRadius,poisonDamage:tower.poisonDamage*boost,poisonDuration:tower.poisonDuration});}
-            function handleProjectiles() { /* ... V10 Func ... */ for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];if(!p.target||p.target.health<=0){projectiles.splice(i,1);continue}const dx=p.target.x-p.x,dy=p.target.y-p.y;const dSq=dx*dx+dy*dy;const sSq=p.speed*p.speed;if(dSq<sSq*1.5){let actDmg=p.damage;const e=p.target;if(e.armorType==='physical'&&(p.projectileType==='bullet'||p.projectileType==='laser'))actDmg*=(1-PHYSICAL_ARMOR_REDUCTION);if(p.type==='splash'){const sRSq=p.splashRadius*p.splashRadius;enemies.forEach(sT=>{if(getDistanceSq(e,sT)<=sRSq){let sDmg=p.damage;if(sT.armorType==='physical'&&(p.projectileType==='bullet'||p.projectileType==='laser'||p.projectileType==='bomb'))sDmg*=(1-PHYSICAL_ARMOR_REDUCTION);sT.health-=sDmg}});addEffect(e.x,e.y,p.splashRadius,'#FFA500','explosion')}else{e.health-=actDmg;if(p.projectileType!=='bomb')addEffect(p.x,p.y,5,'#FFFFFF','hit_flash')}if(p.type==='poison'&&p.poisonDamage>0)e.poisonEffects.push({damage:p.poisonDamage,duration:p.poisonDuration,timer:p.poisonDuration,tickTimer:POISON_TICK_RATE});projectiles.splice(i,1)}else{const dist=Math.sqrt(dSq);p.x+=(dx/dist)*p.speed;p.y+=(dy/dist)*p.speed}}}
+            function handleProjectiles() { /* ... V10 Func (Hit effect removed) ... */ for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];if(!p.target||p.target.health<=0){projectiles.splice(i,1);continue}const dx=p.target.x-p.x,dy=p.target.y-p.y;const dSq=dx*dx+dy*dy;const sSq=p.speed*p.speed;if(dSq<sSq*1.5){let actDmg=p.damage;const e=p.target;if(e.armorType==='physical'&&(p.projectileType==='bullet'||p.projectileType==='laser'))actDmg*=(1-PHYSICAL_ARMOR_REDUCTION);if(p.type==='splash'){const sRSq=p.splashRadius*p.splashRadius;enemies.forEach(sT=>{if(getDistanceSq(e,sT)<=sRSq){let sDmg=p.damage;if(sT.armorType==='physical'&&(p.projectileType==='bullet'||p.projectileType==='laser'||p.projectileType==='bomb'))sDmg*=(1-PHYSICAL_ARMOR_REDUCTION);sT.health-=sDmg}});addEffect(e.x,e.y,p.splashRadius,'#FFA500','explosion')}else{e.health-=actDmg;}if(p.type==='poison'&&p.poisonDamage>0)e.poisonEffects.push({damage:p.poisonDamage,duration:p.poisonDuration,timer:p.poisonDuration,tickTimer:POISON_TICK_RATE});projectiles.splice(i,1)}else{const dist=Math.sqrt(dSq);p.x+=(dx/dist)*p.speed;p.y+=(dy/dist)*p.speed}}}
             function drawProjectiles() { /* ... V8 Func ... */ projectiles.forEach(p=>{ctx.fillStyle=p.color;ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1;ctx.beginPath();if(p.projectileType==='laser'){const l=10,t=2;ctx.rect(p.x-t/2,p.y-l/2,t,l)}else if(p.projectileType==='bomb'){ctx.fillStyle='#444';ctx.arc(p.x,p.y,p.size*1.2,0,Math.PI*2)}else if(p.projectileType==='poison_dart'){const dL=8,dW=3;ctx.moveTo(p.x,p.y-dL*0.6);ctx.lineTo(p.x-dW,p.y);ctx.lineTo(p.x+dW,p.y);ctx.closePath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,p.y+dL*0.4);ctx.lineWidth=1;ctx.stroke();ctx.fill();ctx.lineWidth=1}else{ctx.arc(p.x,p.y,p.size,0,Math.PI*2)}ctx.fill();if(p.projectileType!=='laser'&&p.projectileType!=='poison_dart')ctx.stroke()});}
 
-             // --- Visual Effects Handling --- (Unchanged)
-             function addEffect(x,y,r,c,t='circle',txt=null){let dur=(t==='text'||t==='death_fade')?30:15;if(t==='hit_flash')dur=5;effects.push({x,y,maxRadius:r,currentRadius:0,duration:dur,timer:dur,color:c||'rgba(255,255,0,0.5)',type:t,text:txt})}
-             function handleEffects(){for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.timer--;if(e.type==='text')e.y-=0.5;else if(e.type!=='death_fade'&&e.type!=='hit_flash')e.currentRadius=e.maxRadius*(1-(e.timer/e.duration));if(e.timer<=0)effects.splice(i,1)}}
-             function drawEffects(){effects.forEach(e=>{const alpha=Math.max(0,e.timer/e.duration);ctx.globalAlpha=alpha;ctx.lineWidth=2;if(e.type==='explosion'){const nR=3;for(let i=1;i<=nR;i++){ctx.beginPath();const r=e.currentRadius*(i/nR);ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}}else if(e.type==='text'&&e.text){ctx.fillStyle=e.color;ctx.font=`${TILE_SIZE*0.4}px 'Press Start 2P'`;ctx.textAlign='center';ctx.fillText(e.text,e.x,e.y)}else if(e.type==='death_fade'){ctx.fillStyle=e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.maxRadius*(1-alpha),0,Math.PI*2);ctx.fill()}else if(e.type==='hit_flash'){ctx.fillStyle=e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.maxRadius,0,Math.PI*2);ctx.fill()}else{ctx.beginPath();ctx.arc(e.x,e.y,e.currentRadius,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}ctx.globalAlpha=1.0})}
+             // --- Visual Effects Handling --- (Removed death fade, hit flash)
+             function addEffect(x,y,r,c,t='circle',txt=null){let dur=(t==='text')?30:15;if(t==='explosion')dur=15;/*Removed death/hit*/ if(t==='text'||t==='explosion'){effects.push({x,y,maxRadius:r,currentRadius:0,duration:dur,timer:dur,color:c||'rgba(255,255,0,0.5)',type:t,text:txt})}}
+             function handleEffects(){for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.timer--;if(e.type==='text')e.y-=0.5;else if(e.type==='explosion')e.currentRadius=e.maxRadius*(1-(e.timer/e.duration));if(e.timer<=0)effects.splice(i,1)}}
+             function drawEffects(){effects.forEach(e=>{const alpha=Math.max(0,e.timer/e.duration);ctx.globalAlpha=alpha;ctx.lineWidth=2;if(e.type==='explosion'){const nR=3;for(let i=1;i<=nR;i++){ctx.beginPath();const r=e.currentRadius*(i/nR);ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}}else if(e.type==='text'&&e.text){ctx.fillStyle=e.color;ctx.font=`${TILE_SIZE*0.4}px 'Press Start 2P'`;ctx.textAlign='center';ctx.fillText(e.text,e.x,e.y)}/*Removed death/hit*/ctx.globalAlpha=1.0})}
 
             // --- Wave Management --- (Unchanged)
-            function startWave() { /* ... V10 Func ... */ if(waveInProgress||gameOver)return;if(wave>0&&timeSinceWaveEnd>0){money+=WAVE_SKIP_BONUS;console.log(`Skip bonus:+${WAVE_SKIP_BONUS}`);addEffect(startWaveBtn.offsetLeft+startWaveBtn.offsetWidth/2,startWaveBtn.offsetTop,10,'#FFD700','text',`+${WAVE_SKIP_BONUS}$`);updateUI()}wave++;enemiesToSpawn=(wave%BOSS_WAVE_INTERVAL===0)?1:8+(wave-1)*3;console.log(`Starting Wave ${wave}, Spawning ${enemiesToSpawn} enemies.`);spawnTimer=ENEMY_SPAWN_INTERVAL;waveInProgress=true;timeSinceWaveEnd=0;deselectPlacedTower();updateUI();}
+            function startWave() { /* ... V10 Func ... */ if(waveInProgress||gameOver)return;if(wave>0&&timeSinceWaveEnd>0){money+=WAVE_SKIP_BONUS;console.log(`DEBUG: Skip bonus:+${WAVE_SKIP_BONUS}`);addEffect(startWaveBtn.offsetLeft+startWaveBtn.offsetWidth/2,startWaveBtn.offsetTop,10,'#FFD700','text',`+${WAVE_SKIP_BONUS}$`);updateUI()}wave++;enemiesToSpawn=(wave%BOSS_WAVE_INTERVAL===0)?1:8+(wave-1)*3;console.log(`DEBUG: Starting Wave ${wave}, Spawning ${enemiesToSpawn} enemies.`);spawnTimer=ENEMY_SPAWN_INTERVAL;waveInProgress=true;timeSinceWaveEnd=0;deselectPlacedTower();updateUI();}
             function handleWaves() { /* ... V10 Func ... */ if(!waveInProgress){if(wave>0&&!gameOver)timeSinceWaveEnd++;return}if(enemiesToSpawn>0&&spawnTimer<=0){spawnEnemy();if(wave%BOSS_WAVE_INTERVAL!==0)enemiesToSpawn--;spawnTimer=ENEMY_SPAWN_INTERVAL}spawnTimer--;if(enemiesToSpawn<=0&&enemies.length===0){waveInProgress=false;let b=50+wave*10;let intr=Math.floor(money*INTEREST_RATE);money+=b+intr;console.log(`Wave ${wave} cleared! Bonus:${b}, Interest:${intr}`);timeSinceWaveEnd=1;updateUI()}}
 
             // --- UI and Interaction ---
             function updateUI(){/* ... V10 ... */}
-            function setupEventListeners(){ // Added listener for new tower button
-                startWaveBtn.addEventListener('click',startWave);sellTowerBtn.addEventListener('click',sellSelectedTower);upgradeTowerBtn.addEventListener('click',upgradeSelectedTower);
-                // Select ALL tower buttons correctly
-                document.querySelectorAll('.tower-button').forEach(b=>{
-                    b.addEventListener('click',()=>{
-                        const t = b.dataset.type;
-                        const c = TOWER_TYPES[t];
-                        console.log(`Tower button clicked: ${t}`); // DEBUG LOG
-                        if(c) {
-                            selectTowerPurchase(t,c.cost);
-                        } else {
-                            console.error("Unknown tower type clicked:", t);
-                        }
-                    })
+            function setupEventListeners(){ // Added listener for new tower button + Debugging
+                console.log("DEBUG: Setting up event listeners...");
+                if (!startWaveBtn) { console.error("DEBUG ERROR: startWaveBtn not found!"); return; } // Check element exists
+
+                startWaveBtn.addEventListener('click', () => {
+                    console.log("DEBUG: Start Wave button clicked handler"); // DEBUG LOG
+                    startWave();
                 });
-                targetButtons.forEach(b=>{b.addEventListener('click',()=>{if(selectedTower&&!b.disabled){selectedTower.targetingPriority=b.dataset.priority;updateUI()}})});
+                // Only attach these if buttons exist
+                if(sellTowerBtn) sellTowerBtn.addEventListener('click',sellSelectedTower);
+                if(upgradeTowerBtn) upgradeTowerBtn.addEventListener('click',upgradeSelectedTower);
+
+                console.log(`DEBUG: Found ${towerButtonsNodeList.length} tower buttons.`); // DEBUG LOG
+                towerButtonsNodeList.forEach(b=>{ // Use NodeList directly
+                    const type = b.dataset.type;
+                    if (!type) { console.warn("DEBUG: Button found without data-type:", b); return; }
+
+                    b.addEventListener('click',()=>{
+                        const config = TOWER_TYPES[type];
+                        console.log(`DEBUG: Tower button clicked: ${type}`); // DEBUG LOG
+                        if(config) {
+                            selectTowerPurchase(type,config.cost);
+                        } else {
+                            console.error("DEBUG: Unknown tower type clicked:", type);
+                        }
+                    });
+                    // console.log(`DEBUG: Added listener for ${type} button.`); // Can be noisy, comment out if needed
+                });
+
+                if(targetButtons.length > 0) {
+                    targetButtons.forEach(b=>{b.addEventListener('click',()=>{if(selectedTower&&!b.disabled){selectedTower.targetingPriority=b.dataset.priority;updateUI()}})});
+                } else { console.warn("DEBUG: No target buttons found"); }
+
                 canvas.addEventListener('click',handleCanvasClick);canvas.addEventListener('mousemove',handleMouseMove);canvas.addEventListener('mouseleave',()=>{if(placingTowerType)mouse={x:-1,y:-1};updateScaledMouse()});
                 document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){deselectTowerPurchase();deselectPlacedTower()}});
                 document.addEventListener('click',(e)=>{if(!canvas.contains(e.target)&&!e.target.closest('.control-panel')&&!e.target.closest('.stats')){deselectPlacedTower()}});
                 /*Removed messageBtn listener*/
                 window.addEventListener('resize',updateCanvasScale);
+                 console.log("DEBUG: Event listeners setup complete.");
             }
-            // Restore selectTowerPurchase
-            function selectTowerPurchase(type,cost){
-                console.log(`Attempting selection: type=${type}, cost=${cost}, money=${money}, gameOver=${gameOver}`); // DEBUG LOG
+            function selectTowerPurchase(type,cost){ // Restored function + Logging
+                console.log(`DEBUG: Attempting selection: type=${type}, cost=${cost}, money=${money}, gameOver=${gameOver}`);
                 if (money >= cost && !gameOver) {
-                    console.log("Selection successful! Setting placingTowerType."); // DEBUG LOG
+                    console.log("DEBUG: Selection successful! Setting placingTowerType.");
                     placingTowerType = type;
                     deselectPlacedTower();
                     updateUI();
                  } else {
-                     console.log("Selection failed: Not enough money or game over."); // DEBUG LOG
+                     console.log("DEBUG: Selection failed: Not enough money or game over.");
                  }
             }
-            // Restore deselectTowerPurchase
-            function deselectTowerPurchase(){
-                if (placingTowerType) { console.log("Deselecting tower purchase"); } // DEBUG LOG
+            function deselectTowerPurchase(){ // Restored function + Logging
+                if (placingTowerType) { console.log("DEBUG: Deselecting tower purchase"); }
                 placingTowerType = null;
                 document.querySelectorAll('.tower-button').forEach(btn => btn.classList.remove('selected'));
                 updateUI(); // Update needed to reflect deselection
@@ -290,7 +343,7 @@
 
             // --- Description Population --- (Unchanged)
             function populateDescriptions() { /* ... V10 ... */ let tH='<h4>Towers</h4>';for(const ty in TOWER_TYPES){const c=TOWER_TYPES[ty];const iS=generateIconSVG(ty,'tower',c);tH+=`<div class="desc-item"><span class="desc-icon">${iS}</span><span class="desc-text"><strong>${c.name||ty}:</strong> ${c.description||'N/A'} (Cost:${c.cost})</span></div>`;}towerDescDiv.innerHTML=tH;let eH='<h4>Enemies</h4>';for(const ty in ENEMY_TYPES){const c=ENEMY_TYPES[ty];const iS=generateIconSVG(ty,'enemy',c);eH+=`<div class="desc-item"><span class="desc-icon">${iS}</span><span class="desc-text"><strong>${c.name||ty}:</strong> ${c.description||'N/A'}</span></div>`;}enemyDescDiv.innerHTML=eH;}
-            function generateIconSVG(type, category, config) { /* ... V10 SVG generation ... */ const size=24;let svgContent='';const strokeColor='#bbb';const strokeWidth=1.5;if(category==='tower'){const c=TOWER_TYPES[type];const color=c.color||'#ccc';const shape=c.shape;const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.2}" y="${size*.2}" width="${size*.6}" height="${size*.6}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.1}" width="${size*.2}" height="${size*.3}" fill="#555" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='triangle'){svgContent=`<polygon points="${size/2},${size*.1} ${size*.1},${size*.9} ${size*.9},${size*.9}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size*.6}" r="${s*.3}" fill="white"/>`;}else if(shape==='snowflake'){svgContent=`<path d="M${size/2},${size*.1} L${size*.6},${size*.35} L${size*.85},${size*.35} L${size*.65},${size*.5} L${size*.85},${size*.65} L${size*.6},${size*.65} L${size/2},${size*.9} L${size*.4},${size*.65} L${size*.15},${size*.65} L${size*.35},${size*.5} L${size*.15},${size*.35} L${size*.4},${size*.35} Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='mortar'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s*1.2}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size/2}" r="${s*.6}" fill="#444"/>`;}else if(shape==='vial'){svgContent=`<rect x="${size*.3}" y="${size*.25}" width="${size*.4}" height="${size*.5}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.15}" width="${size*.2}" height="${size*.1}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><rect x="${size*.35}" y="${size*.3}" width="${size*.3}" height="${size*.4}" fill="rgba(0,255,0,0.6)"/>`;}else if(shape==='dollar'){svgContent=`<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="${size*.8}" font-family="'Press Start 2P', cursive" fill="${color}">$</text><circle cx="${size/2}" cy="${size/2}" r="${size*.4}" fill="none" stroke="${color}" stroke-width="1"/>`;}else if(shape==='amplifier'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><path d="M${size/2},${size*.1} L${size/2},${size*.9} M${size*.1},${size/2} L${size*.9},${size/2} M${size*.2},${size*.2} L${size*.8},${size*.8} M${size*.2},${size*.8} L${size*.8},${size*.2}" stroke="${color}" stroke-width="2"/>`;}else if(shape==='detector'){svgContent=`<path d="M${size*.2},${size*.8} Q${size*.5},${size*.1} ${size*.8},${size*.8}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"/><line x1="${size*.5}" y1="${size*.8}" x2="${size*.5}" y2="${size*.5}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><circle cx="${size*.5}" cy="${size*.5}" r="2" fill="${color}"/>`;}else{svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}}else if(category==='enemy'){const c=ENEMY_TYPES[type];const color=c.color||'#ccc';const shape=c.shape;const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.25}" y="${size*.2}" width="${size*.5}" height="${size*.6}" rx="3" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='hexagon'){svgContent=`<polygon points="${size*.5},${size*.1} ${size*.9},${size*.3} ${size*.9},${size*.7} ${size*.5},${size*.9} ${size*.1},${size*.7} ${size*.1},${size*.3}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='boss_shape'){svgContent=`<path d="M12,2 L14.45,8.27 L21.41,8.27 L15.98,12.73 L18.43,18.99 L12,14.51 L5.57,18.99 L8.02,12.73 L2.59,8.27 L9.55,8.27 Z" fill="${color}" stroke="${strokeColor}" stroke-width="1"/>`;}else{const camoStyle=c.isCamo?` opacity="0.5"`:'';svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${camoStyle}/>`;}}return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;}
+            function generateIconSVG(type, category, config) { /* ... V10 SVG generation ... */ const size=24;let svgContent='';const strokeColor='#bbb';const strokeWidth=1.5;if(category==='tower'){const c=TOWER_TYPES[type];if(!c){console.error(`IconGen: Invalid tower type ${type}`);return''}const color=c.color||'#ccc';const shape=c.shape||'circle';const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.2}" y="${size*.2}" width="${size*.6}" height="${size*.6}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.1}" width="${size*.2}" height="${size*.3}" fill="#555" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='triangle'){svgContent=`<polygon points="${size/2},${size*.1} ${size*.1},${size*.9} ${size*.9},${size*.9}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size*.6}" r="${s*.3}" fill="white"/>`;}else if(shape==='snowflake'){svgContent=`<path d="M${size/2},${size*.1} L${size*.6},${size*.35} L${size*.85},${size*.35} L${size*.65},${size*.5} L${size*.85},${size*.65} L${size*.6},${size*.65} L${size/2},${size*.9} L${size*.4},${size*.65} L${size*.15},${size*.65} L${size*.35},${size*.5} L${size*.15},${size*.35} L${size*.4},${size*.35} Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='mortar'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s*1.2}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size/2}" r="${s*.6}" fill="#444"/>`;}else if(shape==='vial'){svgContent=`<rect x="${size*.3}" y="${size*.25}" width="${size*.4}" height="${size*.5}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.15}" width="${size*.2}" height="${size*.1}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><rect x="${size*.35}" y="${size*.3}" width="${size*.3}" height="${size*.4}" fill="rgba(0,255,0,0.6)"/>`;}else if(shape==='dollar'){svgContent=`<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="${size*.8}" font-family="'Press Start 2P', cursive" fill="${color}">$</text><circle cx="${size/2}" cy="${size/2}" r="${size*.4}" fill="none" stroke="${color}" stroke-width="1"/>`;}else if(shape==='amplifier'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><path d="M${size/2},${size*.1} L${size/2},${size*.9} M${size*.1},${size/2} L${size*.9},${size/2} M${size*.2},${size*.2} L${size*.8},${size*.8} M${size*.2},${size*.8} L${size*.8},${size*.2}" stroke="${color}" stroke-width="2"/>`;}else if(shape==='detector'){svgContent=`<path d="M${size*.2},${size*.8} Q${size*.5},${size*.1} ${size*.8},${size*.8}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"/><line x1="${size*.5}" y1="${size*.8}" x2="${size*.5}" y2="${size*.5}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><circle cx="${size*.5}" cy="${size*.5}" r="2" fill="${color}"/>`;}else{svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}}else if(category==='enemy'){const c=ENEMY_TYPES[type];if(!c){console.error(`IconGen: Invalid enemy type ${type}`);return''}const color=c.color||'#ccc';const shape=c.shape||'circle';const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.25}" y="${size*.2}" width="${size*.5}" height="${size*.6}" rx="3" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='hexagon'){svgContent=`<polygon points="${size*.5},${size*.1} ${size*.9},${size*.3} ${size*.9},${size*.7} ${size*.5},${size*.9} ${size*.1},${size*.7} ${size*.1},${size*.3}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='boss_shape'){svgContent=`<path d="M12,2 L14.45,8.27 L21.41,8.27 L15.98,12.73 L18.43,18.99 L12,14.51 L5.57,18.99 L8.02,12.73 L2.59,8.27 L9.55,8.27 Z" fill="${color}" stroke="${strokeColor}" stroke-width="1"/>`;}else{const camoStyle=c.isCamo?` opacity="0.5"`:'';svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${camoStyle}/>`;}}return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;}
 
 
             // --- Game Over / Message --- (Auto-hide logic)
@@ -310,9 +363,14 @@
              }
 
             // --- Start the Game ---
-            gameLoop();
+            console.log("DEBUG: Starting game initialization..."); // DEBUG LOG
+            try {
+                gameLoop();
+                console.log("DEBUG: Game loop started."); // DEBUG LOG
+            } catch (error) {
+                 console.error("ERROR starting game loop:", error);
+            }
         };
     </script>
 </body>
 </html>
-
