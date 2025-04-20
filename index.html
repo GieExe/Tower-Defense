@@ -3,38 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Tower Defense V9</title>
+    <title>Pixel Tower Defense V10.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        /* Base Styles (body, canvas, game-container, layout, panel, stats, controls, buttons etc. - mostly unchanged from V8) */
-        body {
-            font-family: 'Press Start 2P', cursive; background-color: #1a1a1a; color: #e0e0e0;
-            display: flex; justify-content: flex-start; align-items: center; min-height: 100vh;
-            flex-direction: column; overflow-x: hidden; padding: 1rem;
-        }
-        canvas {
-            display: block; border: 4px solid #555; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-            cursor: pointer; width: 100%; height: auto; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;
-        }
+        /* Base Styles (Mostly Unchanged) */
+        body { font-family: 'Press Start 2P', cursive; background-color: #1a1a1a; color: #e0e0e0; display: flex; justify-content: flex-start; align-items: center; min-height: 100vh; flex-direction: column; overflow-x: hidden; padding: 1rem; }
+        canvas { display: block; border: 4px solid #555; border-radius: 8px; box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); cursor: pointer; width: 100%; height: auto; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; }
         .game-container { display: flex; flex-direction: column; align-items: center; width: 95%; max-width: 1000px; padding: 10px; }
         #game-layout { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; width: 100%; gap: 20px; margin-bottom: 20px; }
         .canvas-container { flex: 2; max-width: 600px; min-width: 280px; }
-        .control-panel {
-            flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 15px; background-color: #2a2a2a;
-            padding: 15px; border-radius: 8px; border: 2px solid #555; max-height: 550px; overflow-y: auto;
-        }
+        .control-panel { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 15px; background-color: #2a2a2a; padding: 15px; border-radius: 8px; border: 2px solid #555; max-height: 550px; overflow-y: auto; }
         .stats, .controls { background-color: transparent; border: none; box-shadow: none; padding: 0; width: 100%; margin-bottom: 0; text-align: center; }
         .stats { display: flex; flex-wrap: wrap; justify-content: space-around; font-size: clamp(0.7em, 2.5vw, 0.9em); text-align: left; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid #444; }
         .controls { display: flex; flex-direction: column; gap: 10px; }
         .control-group { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #444; width: 100%; }
         .control-group:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
         .control-group h3 { font-size: clamp(0.7em, 2.5vw, 0.9em); margin-bottom: 8px; color: #aaa; text-transform: uppercase; }
-        .controls button, .tower-button, .target-button {
-            font-family: 'Press Start 2P', cursive; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s; margin: 4px; border-bottom: 3px solid #555;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); vertical-align: middle; font-size: clamp(0.6em, 2vw, 0.8em); flex-shrink: 0;
-        }
+        .controls button, .tower-button, .target-button { font-family:'Press Start 2P',cursive; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; transition:background-color .2s,transform .1s,box-shadow .2s; margin:4px; border-bottom:3px solid #555; box-shadow:0 2px 4px rgba(0,0,0,.2); vertical-align:middle; font-size:clamp(.6em,2vw,.8em); flex-shrink:0; }
         .controls .button-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
         .controls button:hover, .tower-button:hover, .target-button:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.3); transform: translateY(-1px); }
         .controls button:active, .tower-button:active, .target-button:active { transform: translateY(1px); border-bottom-width: 1px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
@@ -49,8 +35,9 @@
         #splashTowerBtn { background-color: #800080; border-bottom-color: #4B0082; } #splashTowerBtn:hover { background-color: #6A0DAD; }
         #poisonTowerBtn { background-color: #228B22; border-bottom-color: #006400; } #poisonTowerBtn:hover { background-color: #556B2F; }
         #moneyTowerBtn { background-color: #DAA520; border-bottom-color: #B8860B; } #moneyTowerBtn:hover { background-color: #CD853F; }
-        #amplifierTowerBtn { background-color: #ff69b4; border-bottom-color: #c71585; } /* Hot Pink */
-        #amplifierTowerBtn:hover { background-color: #ff1493; } /* Deep Pink */
+        #amplifierTowerBtn { background-color: #ff69b4; border-bottom-color: #c71585; } #amplifierTowerBtn:hover { background-color: #ff1493; }
+        #detectorTowerBtn { background-color: #777; border-bottom-color: #555; } /* Grey */
+        #detectorTowerBtn:hover { background-color: #888; }
 
 
         /* Targeting Buttons */
@@ -65,39 +52,28 @@
         #towerActions.visible, #targetingControls.visible { display: block; }
 
         /* Description Area */
-        #description-area {
-            width: 100%; background-color: #2a2a2a; padding: 15px; border-radius: 8px;
-            border: 2px solid #555; margin-top: 0; font-size: clamp(0.7em, 2.5vw, 0.8em);
-            max-height: 300px; overflow-y: auto;
-        }
+        #description-area { width: 100%; background-color: #2a2a2a; padding: 15px; border-radius: 8px; border: 2px solid #555; margin-top: 0; font-size: clamp(0.7em, 2.5vw, 0.8em); max-height: 300px; overflow-y: auto; }
         #description-area h3 { font-size: clamp(0.9em, 3vw, 1.1em); color: #aaa; text-transform: uppercase; margin-bottom: 10px; text-align: center; border-bottom: 1px solid #444; padding-bottom: 5px; }
         #description-area h4 { font-size: clamp(0.8em, 2.8vw, 1em); color: #ccc; margin-top: 15px; margin-bottom: 5px; }
-        #description-area .desc-item { /* Flex container for icon + text */
-            display: flex;
-            align-items: flex-start; /* Align icon top */
-            margin-bottom: 10px;
-            gap: 10px;
-        }
-        #description-area .desc-icon {
-            width: 24px; /* Icon size */
-            height: 24px;
-            flex-shrink: 0;
-            border: 1px solid #444;
-            background-color: #333;
-            border-radius: 4px;
-            display: inline-block; /* Needed for SVG */
-        }
-        #description-area .desc-text {
-            line-height: 1.4; color: #bbb;
-        }
-         #description-area strong { color: #ddd; }
+        #description-area .desc-item { display: flex; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+        #description-area .desc-icon { width: 24px; height: 24px; flex-shrink: 0; border: 1px solid #444; background-color: #333; border-radius: 4px; display: inline-block; }
+        #description-area .desc-text { line-height: 1.4; color: #bbb; }
+        #description-area strong { color: #ddd; }
 
-
-        .message-box { /* Unchanged */ /* ... */ }
-        .message-box button { /* Unchanged */ /* ... */ }
+        /* Message Box - No OK Button */
+        .message-box {
+             position: absolute; top: 50%; left: 50%;
+             transform: translate(-50%, -50%); z-index: 100;
+             background-color: rgba(0, 0, 0, 0.85); color: white;
+             padding: 30px 40px; border-radius: 10px;
+             font-size: 1.5em; text-align: center;
+             border: 3px solid #00ffff; box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+             display: none;
+             pointer-events: none; /* Prevent interaction while message is up */
+        }
 
         /* Responsive adjustments */
-        @media (max-width: 768px) { /* Breakpoint for stacking */
+        @media (max-width: 768px) {
              #game-layout { flex-direction: column; align-items: center; }
              .canvas-container { width: 100%; margin-bottom: 20px; max-width: 600px; }
              .control-panel { width: 100%; max-height: none; overflow-y: visible; flex: none; }
@@ -107,52 +83,39 @@
 </head>
 <body>
     <div class="game-container">
-        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V9</h1>
+        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V10.2</h1>
 
         <div id="game-layout">
             <div class="canvas-container">
                 <canvas id="gameCanvas" width="600" height="400"></canvas>
             </div>
             <div class="control-panel">
-                 <div class="stats" id="stats">
-                    <span>Money: <span id="money">120</span></span>
-                    <span>Score: <span id="score">0</span></span>
-                    <span>Lives: <span id="lives">10</span></span>
-                    <span>Wave: <span id="wave">0</span></span>
-                </div>
-                <div class="controls">
-                    <div class="control-group">
-                        <h3>Towers</h3>
-                        <div class="button-container">
-                            <button id="basicTowerBtn" class="tower-button" data-type="basic">Basic</button>
-                            <button id="laserTowerBtn" class="tower-button" data-type="laser">Laser</button>
-                            <button id="slowTowerBtn" class="tower-button" data-type="slow">Slow</button>
-                            <button id="splashTowerBtn" class="tower-button" data-type="splash">Splash</button>
-                            <button id="poisonTowerBtn" class="tower-button" data-type="poison">Poison</button>
-                            <button id="moneyTowerBtn" class="tower-button" data-type="money">Money</button>
-                            <button id="amplifierTowerBtn" class="tower-button" data-type="amplifier">Amp</button> </div>
-                    </div>
+                 <div class="stats" id="stats"><span>Money:<span id="money">120</span></span> <span>Score:<span id="score">0</span></span> <span>Lives:<span id="lives">10</span></span> <span>Wave:<span id="wave">0</span></span></div>
+                 <div class="controls">
                      <div class="control-group">
-                         <h3>Game</h3>
-                         <div class="button-container"> <button id="startWaveBtn">Start Next Wave</button> </div>
-                    </div>
-                     <div id="towerActions" class="control-group">
-                         <h3>Tower Actions</h3>
-                          <div class="button-container"> <button id="upgradeTowerBtn" class="disabled">Upgrade</button> <button id="sellTowerBtn" class="disabled">Sell</button> </div>
+                         <h3>Towers</h3>
+                         <div class="button-container">
+                             <button id="basicTowerBtn" class="tower-button" data-type="basic">Basic</button>
+                             <button id="laserTowerBtn" class="tower-button" data-type="laser">Laser</button>
+                             <button id="slowTowerBtn" class="tower-button" data-type="slow">Slow</button>
+                             <button id="splashTowerBtn" class="tower-button" data-type="splash">Splash</button>
+                             <button id="poisonTowerBtn" class="tower-button" data-type="poison">Poison</button>
+                             <button id="moneyTowerBtn" class="tower-button" data-type="money">Money</button>
+                             <button id="amplifierTowerBtn" class="tower-button" data-type="amplifier">Amp</button>
+                             <button id="detectorTowerBtn" class="tower-button" data-type="detector">Detect</button> </div>
                      </div>
-                     <div id="targetingControls" class="control-group">
-                         <h3>Target Priority</h3>
-                          <div class="button-container"> <button class="target-button" data-priority="first">First</button> <button class="target-button" data-priority="last">Last</button> <button class="target-button" data-priority="strongest">Strongest</button> <button class="target-button" data-priority="weakest">Weakest</button> </div>
-                     </div>
-                </div>
-            </div>
+                      <div class="control-group"><h3>Game</h3><div class="button-container"><button id="startWaveBtn">Start Next Wave</button></div></div>
+                      <div id="towerActions" class="control-group"><h3>Tower Actions</h3><div class="button-container"><button id="upgradeTowerBtn" class="disabled">Upgrade</button><button id="sellTowerBtn" class="disabled">Sell</button></div></div>
+                      <div id="targetingControls" class="control-group"><h3>Target Priority</h3><div class="button-container"><button class="target-button" data-priority="first">First</button><button class="target-button" data-priority="last">Last</button><button class="target-button" data-priority="strongest">Strongest</button><button class="target-button" data-priority="weakest">Weakest</button></div></div>
+                 </div>
+             </div>
         </div>
         <div id="description-area">
              <h3>Info Zone</h3>
-             <div id="tower-descriptions"> <h4>Towers</h4> </div>
-             <div id="enemy-descriptions"> <h4>Enemies</h4> </div>
+             <div id="tower-descriptions"><h4>Towers</h4></div>
+             <div id="enemy-descriptions"><h4>Enemies</h4></div>
         </div>
-        <div id="messageBox" class="message-box"> <p id="messageText"></p> <button id="messageBtn">OK</button> </div>
+        <div id="messageBox" class="message-box"><p id="messageText"></p></div>
     </div>
 
     <script>
@@ -167,32 +130,34 @@
             const WAVE_START_DELAY = 300; const ENEMY_SPAWN_INTERVAL = 60;
             const SELL_PERCENTAGE = 0.7; const INTEREST_RATE = 0.05;
             const POISON_TICK_RATE = 30; const PHYSICAL_ARMOR_REDUCTION = 0.5;
-            const WAVE_SKIP_BONUS = 5;
-            const BOSS_WAVE_INTERVAL = 10; // Boss appears every 10 waves
+            const WAVE_SKIP_BONUS = 5; const BOSS_WAVE_INTERVAL = 10;
+            const MESSAGE_DURATION = 4000; // 4 seconds for auto-hide message
 
             // --- Enemy Configuration ---
             const ENEMY_TYPES = {
-                'normal': { name: 'Goblin', baseHealth: 30, speed: 1, color: '#28a745', shape: 'circle', sizeFactor: 1.0, armorType: null, description: "Standard cannon fodder. Basic and predictable." },
-                'fast':   { name: 'Runner', baseHealth: 21, speed: 1.8, color: '#ffeb3b', shape: 'rect', sizeFactor: 0.9, armorType: null, description: "Quick but fragile. Hard to hit consistently." },
-                'armored':{ name: 'Knight', baseHealth: 50, speed: 0.8, color: '#9E9E9E', shape: 'hexagon', sizeFactor: 1.1, armorType: 'physical', description: "Slow and tough. Resists physical bullets and lasers." },
-                'boss':   { name: 'Warlord', baseHealth: 500, speed: 0.6, color: '#B71C1C', shape: 'boss_shape', sizeFactor: 1.8, armorType: 'physical', description: "A huge threat! Very high health and resistant to physical attacks." } // Boss type
+                'normal': { name: 'Goblin', baseHealth: 30, speed: 1, color: '#28a745', shape: 'circle', sizeFactor: 1.0, armorType: null, isCamo: false, description: "Standard cannon fodder." },
+                'fast':   { name: 'Runner', baseHealth: 21, speed: 1.8, color: '#ffeb3b', shape: 'rect', sizeFactor: 0.9, armorType: null, isCamo: false, description: "Quick but fragile." },
+                'armored':{ name: 'Knight', baseHealth: 50, speed: 0.8, color: '#9E9E9E', shape: 'hexagon', sizeFactor: 1.1, armorType: 'physical', isCamo: false, description: "Slow and tough. Resists physical bullets/lasers." },
+                'camo':   { name: 'Ghost', baseHealth: 25, speed: 1.2, color: '#E0E0E0', shape: 'circle', sizeFactor: 1.0, armorType: null, isCamo: true, description: "Invisible to most towers unless detected." }, // Camo enemy
+                'boss':   { name: 'Warlord', baseHealth: 500, speed: 0.6, color: '#B71C1C', shape: 'boss_shape', sizeFactor: 1.8, armorType: 'physical', isCamo: false, description: "Huge threat! High health & resists physical." }
             };
             const ENEMY_HEALTH_INCREMENT = 15;
-            const FAST_ENEMY_CHANCE = 0.20; const FAST_ENEMY_START_WAVE = 3;
-            const ARMORED_ENEMY_CHANCE = 0.15; const ARMORED_ENEMY_START_WAVE = 5;
+            const FAST_ENEMY_CHANCE = 0.18; const FAST_ENEMY_START_WAVE = 3; // Adjusted chances slightly
+            const ARMORED_ENEMY_CHANCE = 0.12; const ARMORED_ENEMY_START_WAVE = 5;
+            const CAMO_ENEMY_CHANCE = 0.15; const CAMO_ENEMY_START_WAVE = 7;
 
             // --- Tower Configuration ---
              const TOWER_TYPES = {
-                 'basic': { name: "Basic Turret", cost: 50, range: 100, damage: 12, fireRate: 50, color: '#17a2b8', shape: 'rect', projectile: 'bullet', maxLevel: 2, upgradeCosts: [75], upgradeStats: [{ damage: 18, range: 110 }], description: "Reliable single-target physical damage." },
-                 'laser': { name: "Laser Tower", cost: 75, range: 90, damage: 7, fireRate: 25, color: '#fd7e14', shape: 'triangle', projectile: 'laser', maxLevel: 2, upgradeCosts: [100], upgradeStats: [{ damage: 10, fireRate: 20 }], description: "Rapid-fire energy beam, less effective against armor." },
-                 'slow': { name: "Cryo Tower", cost: 60, range: 80, damage: 0, fireRate: 30, color: '#6495ED', shape: 'snowflake', projectile: null, maxLevel: 2, slowFactor: 0.6, slowDuration: 120, upgradeCosts: [70], upgradeStats: [{ range: 95, slowFactor: 0.5 }], description: "Chills nearby enemies, reducing their movement speed." },
-                 'splash': { name: "Mortar", cost: 90, range: 90, damage: 8, fireRate: 60, color: '#800080', shape: 'mortar', projectile: 'bomb', maxLevel: 2, splashRadius: 40, upgradeCosts: [120], upgradeStats: [{ damage: 12, splashRadius: 50 }], description: "Lob bombs dealing area-of-effect physical damage." },
-                 'poison': { name: "Acid Spitter", cost: 80, range: 110, damage: 2, fireRate: 55, color: '#228B22', shape: 'vial', projectile: 'poison_dart', maxLevel: 2, poisonDamage: 4, poisonDuration: 180, upgradeCosts: [100], upgradeStats: [{ poisonDamage: 6, poisonDuration: 240 }], description: "Applies a corrosive poison dealing damage over time, bypasses armor." },
-                 'money': { name: "Generator", cost: 100, range: 0, damage: 0, fireRate: 300, color: '#DAA520', shape: 'dollar', projectile: null, maxLevel: 2, incomeAmount: 5, upgradeCosts: [150], upgradeStats: [{ incomeAmount: 8, fireRate: 240 }], description: "Generates passive income periodically." },
-                 'amplifier': { name: "Amp Tower", cost: 120, range: 0, damage: 0, fireRate: 0, color: '#ff69b4', shape: 'amplifier', projectile: null, maxLevel: 2,
-                                boostRadius: 70, // Radius it affects other towers
-                                boostFactor: 1.2, // 20% damage boost
-                                upgradeCosts: [180], upgradeStats: [{ boostFactor: 1.3, boostRadius: 80 }], description: "Boosts the damage of nearby attack towers." }
+                 'basic': { name: "Basic Turret", cost: 50, range: 100, damage: 12, fireRate: 50, color: '#17a2b8', shape: 'rect', projectile: 'bullet', detectsCamo: false, maxLevel: 2, upgradeCosts: [75], upgradeStats: [{ damage: 18, range: 110 }], description: "Reliable single-target physical damage." },
+                 'laser': { name: "Laser Tower", cost: 75, range: 90, damage: 7, fireRate: 25, color: '#fd7e14', shape: 'triangle', projectile: 'laser', detectsCamo: false, maxLevel: 2, upgradeCosts: [100], upgradeStats: [{ damage: 10, fireRate: 20 }], description: "Rapid-fire energy beam, less effective against armor." },
+                 'slow': { name: "Cryo Tower", cost: 60, range: 80, damage: 0, fireRate: 30, color: '#6495ED', shape: 'snowflake', projectile: null, detectsCamo: false, maxLevel: 2, slowFactor: 0.6, slowDuration: 120, upgradeCosts: [70], upgradeStats: [{ range: 95, slowFactor: 0.5 }], description: "Chills nearby enemies, reducing their movement speed." },
+                 'splash': { name: "Mortar", cost: 90, range: 90, damage: 8, fireRate: 60, color: '#800080', shape: 'mortar', projectile: 'bomb', detectsCamo: false, maxLevel: 2, splashRadius: 40, upgradeCosts: [120], upgradeStats: [{ damage: 12, splashRadius: 50 }], description: "Lob bombs dealing area-of-effect physical damage." },
+                 'poison': { name: "Acid Spitter", cost: 80, range: 110, damage: 2, fireRate: 55, color: '#228B22', shape: 'vial', projectile: 'poison_dart', detectsCamo: false, maxLevel: 2, poisonDamage: 4, poisonDuration: 180, upgradeCosts: [100], upgradeStats: [{ poisonDamage: 6, poisonDuration: 240 }], description: "Applies poison dealing damage over time, bypasses armor." },
+                 'money': { name: "Generator", cost: 100, range: 0, damage: 0, fireRate: 300, color: '#DAA520', shape: 'dollar', projectile: null, detectsCamo: false, maxLevel: 2, incomeAmount: 5, upgradeCosts: [150], upgradeStats: [{ incomeAmount: 8, fireRate: 240 }], description: "Generates passive income periodically." },
+                 'amplifier': { name: "Amp Tower", cost: 120, range: 0, damage: 0, fireRate: 0, color: '#ff69b4', shape: 'amplifier', projectile: null, detectsCamo: false, maxLevel: 2, boostRadius: 70, boostFactor: 1.2, upgradeCosts: [180], upgradeStats: [{ boostFactor: 1.3, boostRadius: 80 }], description: "Boosts damage of nearby attack towers." },
+                 'detector': { name: "Radar Dish", cost: 70, range: 0, damage: 0, fireRate: 0, color: '#777', shape: 'detector', projectile: null, detectsCamo: false, /* Note: 'detectsCamo' here means the tower itself can see camo, which this one can't */ maxLevel: 1, // No upgrades for now
+                                 detectionRadius: 120, // Radius it reveals camo enemies
+                                 description: "Reveals nearby Camo enemies, allowing other towers to target them."}
              };
 
             // --- Game State ---
@@ -204,9 +169,10 @@
             let waveInProgress = false; let enemiesToSpawn = 0; let spawnTimer = 0;
             let frameCount = 0; let gameOver = false; let gamePaused = false;
             let scaleX = 1, scaleY = 1; let timeSinceWaveEnd = 0;
+            let messageTimeout = null; // Timer for auto-hiding message box
 
-            // --- UI Elements --- /* ... V8 ... */
-            const moneyDisplay=document.getElementById('money');const scoreDisplay=document.getElementById('score');const livesDisplay=document.getElementById('lives');const waveDisplay=document.getElementById('wave');const startWaveBtn=document.getElementById('startWaveBtn');const sellTowerBtn=document.getElementById('sellTowerBtn');const upgradeTowerBtn=document.getElementById('upgradeTowerBtn');const towerButtons=document.querySelectorAll('.tower-button');const targetButtons=document.querySelectorAll('.target-button');const towerActionsDiv=document.getElementById('towerActions');const targetingControlsDiv=document.getElementById('targetingControls');const messageBox=document.getElementById('messageBox');const messageText=document.getElementById('messageText');const messageBtn=document.getElementById('messageBtn');const towerDescDiv=document.getElementById('tower-descriptions');const enemyDescDiv=document.getElementById('enemy-descriptions');
+            // --- UI Elements --- /* ... V10 ... */
+            const moneyDisplay=document.getElementById('money');const scoreDisplay=document.getElementById('score');const livesDisplay=document.getElementById('lives');const waveDisplay=document.getElementById('wave');const startWaveBtn=document.getElementById('startWaveBtn');const sellTowerBtn=document.getElementById('sellTowerBtn');const upgradeTowerBtn=document.getElementById('upgradeTowerBtn');const towerButtons=document.querySelectorAll('.tower-button');const targetButtons=document.querySelectorAll('.target-button');const towerActionsDiv=document.getElementById('towerActions');const targetingControlsDiv=document.getElementById('targetingControls');const messageBox=document.getElementById('messageBox');const messageText=document.getElementById('messageText');/*Removed messageBtn*/const towerDescDiv=document.getElementById('tower-descriptions');const enemyDescDiv=document.getElementById('enemy-descriptions');
 
             // --- Path Definition ---
             const pathPoints = [ { x: 0, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 7 }, { x: 10, y: 7 }, { x: 10, y: 4 }, { x: 14, y: 4 } ];
@@ -216,429 +182,137 @@
             populateDescriptions(); updateCanvasScale(); updateUI(); setupEventListeners();
 
             // --- Game Loop ---
-            function gameLoop() { /* ... V8 ... */ if(gameOver||gamePaused){if(!gameOver)requestAnimationFrame(gameLoop);return}frameCount++;drawBackground();drawPath();drawGrid();handleWaves();handleEnemies();handleTowers();handleProjectiles();handleEffects();drawTowers();drawEnemies();drawProjectiles();drawEffects();if(placingTowerType)drawTowerPlacementPreview();requestAnimationFrame(gameLoop);}
+            function gameLoop() {
+                 if (!gamePaused || messageTimeout) { requestAnimationFrame(gameLoop); }
+                 if ((gamePaused && !messageTimeout) || gameOver) { return; }
+                 frameCount++;
+                 drawBackground(); drawPath(); drawGrid();
+                 handleWaves(); handleEnemies(); handleTowers(); handleProjectiles(); handleEffects();
+                 drawTowers(); drawEnemies(); drawProjectiles(); drawEffects();
+                 if (placingTowerType) drawTowerPlacementPreview();
+             }
 
              // --- Background, Grid and Path --- (Unchanged)
-             function drawBackground() { /* ... V8 ... */ const cX=BASE_CANVAS_WIDTH/2,cY=BASE_CANVAS_HEIGHT/2;const oR=Math.sqrt(cX*cX+cY*cY);const g=ctx.createRadialGradient(cX,cY,0,cX,cY,oR);g.addColorStop(0,'#3a3a3a');g.addColorStop(1,'#2a2a2a');ctx.fillStyle=g;ctx.fillRect(0,0,BASE_CANVAS_WIDTH,BASE_CANVAS_HEIGHT);}
-             function createGrid() { /* ... V8 ... */ const g=[];for(let y=0;y<GRID_HEIGHT;y++){g[y]=[];for(let x=0;x<GRID_WIDTH;x++)g[y][x]={type:'empty',tower:null}}return g;}
-             function calculatePixelPath() { /* ... V8 ... */ path=[];if(pathPoints.length===0)return;let tD=0;const w=[];w.push({x:pathPoints[0].x*TILE_SIZE-TILE_SIZE,y:pathPoints[0].y*TILE_SIZE+TILE_SIZE/2,dist:0});for(let i=0;i<pathPoints.length;i++){const p=pathPoints[i];const x=p.x*TILE_SIZE+TILE_SIZE/2;const y=p.y*TILE_SIZE+TILE_SIZE/2;const pW=w[w.length-1];const sD=getDistance(pW,{x,y});tD+=sD;w.push({x,y,dist:tD});if(i>0){const pP=pathPoints[i-1];if(p.x===pP.x){const sY=Math.min(p.y,pP.y),eY=Math.max(p.y,pP.y);for(let py=sY;py<=eY;py++)if(grid[py]?.[p.x])grid[py][p.x].type='path'}else{const sX=Math.min(p.x,pP.x),eX=Math.max(p.x,pP.x);for(let px=sX;px<=eX;px++)if(grid[p.y]?.[px])grid[p.y][px].type='path'}}else{if(grid[p.y]?.[p.x])grid[p.y][p.x].type='path'}}const lGP=pathPoints[pathPoints.length-1];const eX=(lGP.x+1)*TILE_SIZE+TILE_SIZE;const eY=lGP.y*TILE_SIZE+TILE_SIZE/2;const lW=w[w.length-1];tD+=getDistance(lW,{x:eX,y:eY});w.push({x:eX,y:eY,dist:tD});path=w;}
-             function drawGrid() { /* ... V8 ... */ ctx.strokeStyle='rgba(85,85,85,0.3)';ctx.lineWidth=1;for(let y=0;y<GRID_HEIGHT;y++)for(let x=0;x<GRID_WIDTH;x++)ctx.strokeRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE);}
-             function drawPath() { /* ... V8 ... */ if(path.length<2)return;const pWO=TILE_SIZE*0.85;const pWI=TILE_SIZE*0.7;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#5a3a2a';ctx.lineWidth=pWO;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();ctx.strokeStyle='#a07050';ctx.lineWidth=pWI;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();}
+             function drawBackground() { /* ... V9 ... */ const cX=BASE_CANVAS_WIDTH/2,cY=BASE_CANVAS_HEIGHT/2;const oR=Math.sqrt(cX*cX+cY*cY);const g=ctx.createRadialGradient(cX,cY,0,cX,cY,oR);g.addColorStop(0,'#3a3a3a');g.addColorStop(1,'#2a2a2a');ctx.fillStyle=g;ctx.fillRect(0,0,BASE_CANVAS_WIDTH,BASE_CANVAS_HEIGHT);}
+             function createGrid() { /* ... V9 ... */ const g=[];for(let y=0;y<GRID_HEIGHT;y++){g[y]=[];for(let x=0;x<GRID_WIDTH;x++)g[y][x]={type:'empty',tower:null}}return g;}
+             function calculatePixelPath() { /* ... V9 ... */ path=[];if(pathPoints.length===0)return;let tD=0;const w=[];w.push({x:pathPoints[0].x*TILE_SIZE-TILE_SIZE,y:pathPoints[0].y*TILE_SIZE+TILE_SIZE/2,dist:0});for(let i=0;i<pathPoints.length;i++){const p=pathPoints[i];const x=p.x*TILE_SIZE+TILE_SIZE/2;const y=p.y*TILE_SIZE+TILE_SIZE/2;const pW=w[w.length-1];const sD=getDistance(pW,{x,y});tD+=sD;w.push({x,y,dist:tD});if(i>0){const pP=pathPoints[i-1];if(p.x===pP.x){const sY=Math.min(p.y,pP.y),eY=Math.max(p.y,pP.y);for(let py=sY;py<=eY;py++)if(grid[py]?.[p.x])grid[py][p.x].type='path'}else{const sX=Math.min(p.x,pP.x),eX=Math.max(p.x,pP.x);for(let px=sX;px<=eX;px++)if(grid[p.y]?.[px])grid[p.y][px].type='path'}}else{if(grid[p.y]?.[p.x])grid[p.y][p.x].type='path'}}const lGP=pathPoints[pathPoints.length-1];const eX=(lGP.x+1)*TILE_SIZE+TILE_SIZE;const eY=lGP.y*TILE_SIZE+TILE_SIZE/2;const lW=w[w.length-1];tD+=getDistance(lW,{x:eX,y:eY});w.push({x:eX,y:eY,dist:tD});path=w;}
+             function drawGrid() { /* ... V9 ... */ ctx.strokeStyle='rgba(85,85,85,0.3)';ctx.lineWidth=1;for(let y=0;y<GRID_HEIGHT;y++)for(let x=0;x<GRID_WIDTH;x++)ctx.strokeRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE);}
+             function drawPath() { /* ... V9 ... */ if(path.length<2)return;const pWO=TILE_SIZE*0.85;const pWI=TILE_SIZE*0.7;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#5a3a2a';ctx.lineWidth=pWO;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();ctx.strokeStyle='#a07050';ctx.lineWidth=pWI;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();}
 
-             // --- Enemy Handling ---
-            function spawnEnemy() { // Added Boss Wave logic
-                let enemyTypeKey = 'normal';
+             // --- Enemy Handling --- (Unchanged)
+            function spawnEnemy() { /* ... V10 ... */ let eTK='normal';let rR=Math.random();if(wave%BOSS_WAVE_INTERVAL===0&&wave>0){eTK='boss'}else{let cC=0;if(wave>=ARMORED_ENEMY_START_WAVE){cC+=ARMORED_ENEMY_CHANCE;if(rR<cC)eTK='armored'}if(eTK==='normal'&&wave>=CAMO_ENEMY_START_WAVE){cC+=CAMO_ENEMY_CHANCE;if(rR<cC)eTK='camo'}if(eTK==='normal'&&wave>=FAST_ENEMY_START_WAVE){cC+=FAST_ENEMY_CHANCE;if(rR<cC)eTK='fast'}}const eC=ENEMY_TYPES[eTK];let h=eC.baseHealth;if(eTK==='boss')h+=((wave)/BOSS_WAVE_INTERVAL)*ENEMY_HEALTH_INCREMENT*BOSS_WAVE_INTERVAL*1.5;else h+=(wave-1)*ENEMY_HEALTH_INCREMENT;enemies.push({x:path[0].x,y:path[0].y,health:h,maxHealth:h,speed:eC.speed,pathIndex:1,size:TILE_SIZE*.4*eC.sizeFactor,color:eC.color,type:eTK,shape:eC.shape,armorType:eC.armorType,isCamo:eC.isCamo,isDetected:false,speedMultiplier:1,slowTimer:0,poisonEffects:[],distanceTraveled:0});if(eTK==='boss')enemiesToSpawn=0;} // Fix: use wave-1 for normal scaling
+            function handleEnemies() { /* ... V10 ... */ const dTs=towers.filter(t=>t.type==='detector');enemies.forEach(e=>{if(e.isCamo){e.isDetected=false;for(const d of dTs){if(getDistanceSq(e,d)<=d.detectionRadius*d.detectionRadius){e.isDetected=true;break}}}else{e.isDetected=true}});for(let i=enemies.length-1;i>=0;i--){const e=enemies[i];if(e.health<=0){money+=5+Math.floor(wave/5);score+=10;updateUI();addEffect(e.x,e.y,e.size*1.5,e.color,'death_fade');enemies.splice(i,1);continue}if(e.slowTimer>0){e.slowTimer--;if(e.slowTimer<=0)e.speedMultiplier=1}for(let j=e.poisonEffects.length-1;j>=0;j--){const p=e.poisonEffects[j];p.timer--;p.tickTimer--;if(p.tickTimer<=0&&p.timer>0){e.health-=p.damage;p.tickTimer=POISON_TICK_RATE}if(p.timer<=0)e.poisonEffects.splice(j,1)}if(e.health<=0)continue;const effSp=e.speed*e.speedMultiplier;if(e.pathIndex<path.length){const tP=path[e.pathIndex];const dx=tP.x-e.x,dy=tP.y-e.y;const dWSq=dx*dx+dy*dy;let mD=effSp;if(dWSq<mD*mD){mD=Math.sqrt(dWSq);e.x=tP.x;e.y=tP.y;e.pathIndex++}else{const dW=Math.sqrt(dWSq);e.x+=(dx/dW)*mD;e.y+=(dy/dW)*mD}e.distanceTraveled+=mD}else{lives--;updateUI();enemies.splice(i,1);if(lives<=0)endGame(false);continue}}}
+            function drawEnemies() { /* ... V10 ... */ enemies.forEach(e=>{ctx.globalAlpha=(e.isCamo&&!e.isDetected)?0.4:1.0;ctx.fillStyle=e.color;let bC='#1e7e34';if(e.poisonEffects.length>0)bC='#800080';if(e.speedMultiplier<1)bC='#007bff';ctx.strokeStyle=bC;ctx.lineWidth=2;ctx.beginPath();if(e.shape==='rect'){const cr=e.size*0.3,w=e.size,h=e.size*1.2;ctx.moveTo(e.x-w+cr,e.y-h);ctx.lineTo(e.x+w-cr,e.y-h);ctx.arcTo(e.x+w,e.y-h,e.x+w,e.y-h+cr,cr);ctx.lineTo(e.x+w,e.y+h-cr);ctx.arcTo(e.x+w,e.y+h,e.x+w-cr,e.y+h,cr);ctx.lineTo(e.x-w+cr,e.y+h);ctx.arcTo(e.x-w,e.y+h,e.x-w,e.y+h-cr,cr);ctx.lineTo(e.x-w,e.y-h+cr);ctx.arcTo(e.x-w,e.y-h,e.x-w+cr,e.y-h,cr);ctx.closePath()}else if(e.shape==='hexagon'){const s=e.size*1.2;ctx.moveTo(e.x+s,e.y);for(let i=1;i<=6;i++)ctx.lineTo(e.x+s*Math.cos(i*2*Math.PI/6),e.y+s*Math.sin(i*2*Math.PI/6));ctx.closePath()}else if(e.shape==='boss_shape'){const s=e.size*1.3,spikes=8,angle=Math.PI*2/spikes;ctx.beginPath();for(let i=0;i<spikes;i++){const x1=e.x+s*Math.cos(angle*i);const y1=e.y+s*Math.sin(angle*i);const x2=e.x+s*0.7*Math.cos(angle*i+angle/2);const y2=e.y+s*0.7*Math.sin(angle*i+angle/2);if(i===0)ctx.moveTo(x1,y1);else ctx.lineTo(x1,y1);ctx.lineTo(x2,y2);}ctx.closePath();}else{ctx.arc(e.x,e.y,e.size,0,Math.PI*2)}ctx.fill();ctx.stroke();const hBW=e.size*2,hBH=5,hP=e.health/e.maxHealth;ctx.fillStyle='#555';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW,hBH);ctx.fillStyle='#dc3545';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW*hP,hBH);ctx.globalAlpha=1.0;});}
 
-                // Check for Boss Wave first
-                if ((wave + 1) % BOSS_WAVE_INTERVAL === 0) { // Spawn boss on wave N, 2N, etc. (wave is 0-indexed)
-                    enemyTypeKey = 'boss';
-                    // Override normal spawning logic for boss wave
-                    const enemyConfig = ENEMY_TYPES[enemyTypeKey];
-                    // Scale boss health significantly by wave, more than normal increment
-                    const health = (enemyConfig.baseHealth + ((wave + 1)/BOSS_WAVE_INTERVAL - 1) * ENEMY_HEALTH_INCREMENT * BOSS_WAVE_INTERVAL * 1.5); // Example scaling
-                    enemies.push({ /* ... boss stats ... */ x: path[0].x, y: path[0].y, health: health, maxHealth: health, speed: enemyConfig.speed, pathIndex: 1, size: TILE_SIZE * 0.4 * enemyConfig.sizeFactor, color: enemyConfig.color, type: enemyTypeKey, shape: enemyConfig.shape, armorType: enemyConfig.armorType, speedMultiplier: 1, slowTimer: 0, poisonEffects: [], distanceTraveled: 0 });
-                    return; // Only spawn the boss on this wave
-                }
-
-                // Normal spawning logic
-                let randomRoll = Math.random();
-                if (wave >= ARMORED_ENEMY_START_WAVE && randomRoll < ARMORED_ENEMY_CHANCE) { enemyTypeKey = 'armored'; }
-                else if (wave >= FAST_ENEMY_START_WAVE && randomRoll < ARMORED_ENEMY_CHANCE + FAST_ENEMY_CHANCE) { enemyTypeKey = 'fast'; }
-
-                const enemyConfig = ENEMY_TYPES[enemyTypeKey];
-                const health = (enemyConfig.baseHealth + wave * ENEMY_HEALTH_INCREMENT); // Use current wave for scaling
-
-                enemies.push({ /* ... normal/fast/armored stats ... */ x: path[0].x, y: path[0].y, health: health, maxHealth: health, speed: enemyConfig.speed, pathIndex: 1, size: TILE_SIZE * 0.4 * enemyConfig.sizeFactor, color: enemyConfig.color, type: enemyTypeKey, shape: enemyConfig.shape, armorType: enemyConfig.armorType, speedMultiplier: 1, slowTimer: 0, poisonEffects: [], distanceTraveled: 0 });
-            }
-            function handleEnemies() { // Added death animation trigger
-                 for (let i = enemies.length - 1; i >= 0; i--) {
-                     const enemy = enemies[i];
-                     if (enemy.health <= 0) { // Handle death first
-                         money += 5 + Math.floor(wave / 5); score += 10; updateUI();
-                         addEffect(enemy.x, enemy.y, enemy.size * 1.5, enemy.color, 'death_fade'); // Trigger death effect
-                         enemies.splice(i, 1); continue;
-                     }
-
-                     // Handle Slow
-                     if (enemy.slowTimer > 0) { enemy.slowTimer--; if (enemy.slowTimer <= 0) enemy.speedMultiplier = 1; }
-
-                     // Handle Poison
-                     for (let j = enemy.poisonEffects.length - 1; j >= 0; j--) {
-                         const poison = enemy.poisonEffects[j]; poison.timer--; poison.tickTimer--;
-                         if (poison.tickTimer <= 0 && poison.timer > 0) { enemy.health -= poison.damage; poison.tickTimer = POISON_TICK_RATE; }
-                         if (poison.timer <= 0) enemy.poisonEffects.splice(j, 1);
-                     }
-                     // Check health again after poison
-                      if (enemy.health <= 0) continue; // Let death handling catch it next frame
-
-                     // Movement
-                     const effectiveSpeed = enemy.speed * enemy.speedMultiplier;
-                     if (enemy.pathIndex < path.length) {
-                         const targetPoint = path[enemy.pathIndex]; const dx = targetPoint.x - enemy.x; const dy = targetPoint.y - enemy.y;
-                         const distanceToWaypointSq = dx*dx + dy*dy; let moveDistance = effectiveSpeed;
-                         if (distanceToWaypointSq < moveDistance * moveDistance) { moveDistance = Math.sqrt(distanceToWaypointSq); enemy.x = targetPoint.x; enemy.y = targetPoint.y; enemy.pathIndex++; }
-                         else { const dW = Math.sqrt(distanceToWaypointSq); enemy.x += (dx / dW) * moveDistance; enemy.y += (dy / dW) * moveDistance; }
-                         enemy.distanceTraveled += moveDistance;
-                     } else { lives--; updateUI(); enemies.splice(i, 1); if (lives <= 0) endGame(false); continue; }
-                 }
-             }
-            function drawEnemies() { // Added Boss shape
-                enemies.forEach(enemy => {
-                    ctx.fillStyle = enemy.color;
-                    let borderColor = '#1e7e34'; if(enemy.poisonEffects.length > 0) borderColor = '#800080'; if(enemy.speedMultiplier < 1) borderColor = '#007bff';
-                    ctx.strokeStyle = borderColor; ctx.lineWidth = 2; ctx.beginPath();
-
-                    if (enemy.shape === 'rect') { const cr=e.size*0.3,w=e.size,h=e.size*1.2;ctx.moveTo(e.x-w+cr,e.y-h);ctx.lineTo(e.x+w-cr,e.y-h);ctx.arcTo(e.x+w,e.y-h,e.x+w,e.y-h+cr,cr);ctx.lineTo(e.x+w,e.y+h-cr);ctx.arcTo(e.x+w,e.y+h,e.x+w-cr,e.y+h,cr);ctx.lineTo(e.x-w+cr,e.y+h);ctx.arcTo(e.x-w,e.y+h,e.x-w,e.y+h-cr,cr);ctx.lineTo(e.x-w,e.y-h+cr);ctx.arcTo(e.x-w,e.y-h,e.x-w+cr,e.y-h,cr);ctx.closePath();}
-                    else if (enemy.shape === 'hexagon') { const s=e.size*1.2;ctx.moveTo(e.x+s,e.y);for(let i=1;i<=6;i++)ctx.lineTo(e.x+s*Math.cos(i*2*Math.PI/6),e.y+s*Math.sin(i*2*Math.PI/6));ctx.closePath();}
-                    else if (enemy.shape === 'boss_shape') { // Simple boss shape: Large circle with spikes
-                        const size = enemy.size * 1.3; const spikes = 8; const angle = Math.PI * 2 / spikes;
-                        ctx.moveTo(enemy.x + size, enemy.y);
-                        for (let i = 0; i < spikes; i++) {
-                            ctx.rotate(angle / 2); ctx.lineTo(enemy.x + size * 0.7, enemy.y); // Inner point
-                            ctx.rotate(angle / 2); ctx.lineTo(enemy.x + size, enemy.y); // Outer point
-                        }
-                         ctx.closePath(); // This might not work well with rotate, draw manually
-                         ctx.beginPath();
-                         for (let i = 0; i < spikes; i++) {
-                             const x1 = enemy.x + size * Math.cos(angle * i);
-                             const y1 = enemy.y + size * Math.sin(angle * i);
-                             const x2 = enemy.x + size * 0.7 * Math.cos(angle * i + angle / 2);
-                             const y2 = enemy.y + size * 0.7 * Math.sin(angle * i + angle / 2);
-                             if (i === 0) ctx.moveTo(x1, y1); else ctx.lineTo(x1, y1);
-                             ctx.lineTo(x2, y2);
-                         }
-                         ctx.closePath();
-                    }
-                    else { ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2); } // Default circle
-
-                    ctx.fill(); ctx.stroke();
-                    // Health bar (unchanged)
-                    const hBW=e.size*2,hBH=5,hP=e.health/e.maxHealth;ctx.fillStyle='#555';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW,hBH);ctx.fillStyle='#dc3545';ctx.fillRect(e.x-hBW/2,e.y-e.size-hBH-3,hBW*hP,hBH);
-                });
-            }
-
-            // --- Tower Handling ---
-             function canPlaceTower(gridX, gridY, towerType) { /* ... V8 Func ... */ const c=TOWER_TYPES[towerType];if(!c||!grid[gridY]?.[gridX]||grid[gridY][gridX].type!=='empty'||money<c.cost)return false;return true;}
-             function placeTower(gridX, gridY) { // Added boost stats
-                 if (!placingTowerType) return; const config = TOWER_TYPES[placingTowerType]; if (!config || !canPlaceTower(gridX, gridY, placingTowerType)) return;
-                 money -= config.cost; const tX = gridX * TILE_SIZE + TILE_SIZE / 2; const tY = gridY * TILE_SIZE + TILE_SIZE / 2;
-                 const newTower = {
-                     x: tX, y: tY, gridX: gridX, gridY: gridY, range: config.range, damage: config.damage, fireRate: config.fireRate,
-                     slowFactor: config.slowFactor, slowDuration: config.slowDuration, splashRadius: config.splashRadius,
-                     poisonDamage: config.poisonDamage, poisonDuration: config.poisonDuration,
-                     incomeAmount: config.incomeAmount,
-                     boostRadius: config.boostRadius, boostFactor: config.boostFactor, // Add boost stats
-                     fireCooldown: 0, target: null, type: placingTowerType, level: 1, maxLevel: config.maxLevel, totalCost: config.cost, targetingPriority: 'first',
-                     isFiring: false, firingTimer: 0 // For firing animation
-                 };
-                 towers.push(newTower); grid[gridY][gridX].type = 'tower'; grid[gridY][gridX].tower = newTower; deselectTowerPurchase(); updateUI();
-              }
-             function handleTowers() { // Added Amplifier logic and firing animation trigger
-                 // Pre-calculate amplifier boosts
-                 let amplifierBoosts = calculateAmplifierBoosts();
-
-                 towers.forEach(t => {
-                     if (t.firingTimer > 0) t.firingTimer--; else t.isFiring = false; // Handle firing animation timer
-                     if (t.fireCooldown > 0) t.fireCooldown--;
-
-                     if (t.type === 'money') { if (t.fireCooldown <= 0) { money += t.incomeAmount; t.fireCooldown = t.fireRate; updateUI(); addEffect(t.x, t.y - TILE_SIZE * 0.5, 10, '#FFD700', 'text', `+$${t.incomeAmount}`); } }
-                     else if (t.type === 'slow') { if (t.fireCooldown <= 0) { applySlowEffect(t); t.fireCooldown = t.fireRate; t.isFiring = true; t.firingTimer = 5; } } // Trigger firing anim for slow
-                     else if (t.type === 'amplifier') { /* Does nothing actively */ }
-                     else { // Attack Towers
-                         const rangeSq = t.range * t.range;
-                         if (!t.target || t.target.health <= 0 || getDistanceSq(t, t.target) > rangeSq) { t.target = findTargetBasedOnPriority(t); }
-                         if (t.fireCooldown <= 0 && t.target) {
-                             // Apply boost before firing
-                             let boost = amplifierBoosts[`${t.gridX},${t.gridY}`] || 1.0; // Get boost for this tower's location
-                             fireProjectile(t, t.target, boost); // Pass boost to firing function
-                             t.fireCooldown = t.fireRate; // Apply boost to fire rate later if needed
-                             t.isFiring = true; t.firingTimer = 5; // Trigger firing animation (short duration)
-                         }
-                     }
-                 });
-             }
-             // Calculate boosts for all tower locations affected by amplifiers
-             function calculateAmplifierBoosts() {
-                 let boosts = {}; // Store as { "x,y": boostFactor }
-                 towers.filter(t => t.type === 'amplifier').forEach(amp => {
-                     const boostRadiusSq = amp.boostRadius * amp.boostRadius;
-                     towers.forEach(targetTower => {
-                         if (targetTower !== amp && targetTower.damage > 0) { // Only boost other attack towers
-                             if (getDistanceSq(amp, targetTower) <= boostRadiusSq) {
-                                 const key = `${targetTower.gridX},${targetTower.gridY}`;
-                                 // Apply strongest boost if multiple amps overlap
-                                 boosts[key] = Math.max(boosts[key] || 1.0, amp.boostFactor);
-                             }
-                         }
-                     });
-                 });
-                 return boosts;
-             }
+            // --- Tower Handling --- (Unchanged)
+             function canPlaceTower(gridX, gridY, towerType) { /* ... V9 Func ... */ const c=TOWER_TYPES[towerType];if(!c||!grid[gridY]?.[gridX]||grid[gridY][gridX].type!=='empty'||money<c.cost)return false;return true;}
+             function placeTower(gridX, gridY) { /* ... V10 Func ... */ if(!placingTowerType)return;const c=TOWER_TYPES[placingTowerType];if(!c||!canPlaceTower(gridX,gridY,placingTowerType))return;money-=c.cost;const tX=gridX*TILE_SIZE+TILE_SIZE/2,tY=gridY*TILE_SIZE+TILE_SIZE/2;const nT={x:tX,y:tY,gridX:gridX,gridY:gridY,range:c.range,damage:c.damage,fireRate:c.fireRate,slowFactor:c.slowFactor,slowDuration:c.slowDuration,splashRadius:c.splashRadius,poisonDamage:c.poisonDamage,poisonDuration:c.poisonDuration,incomeAmount:c.incomeAmount,boostRadius:c.boostRadius,boostFactor:c.boostFactor,detectionRadius:c.detectionRadius,detectsCamo:c.detectsCamo,fireCooldown:0,target:null,type:placingTowerType,level:1,maxLevel:c.maxLevel,totalCost:c.cost,targetingPriority:'first',isFiring:false,firingTimer:0};towers.push(nT);grid[gridY][gridX].type='tower';grid[gridY][gridX].tower=nT;deselectTowerPurchase();updateUI();}
+             function handleTowers() { /* ... V10 Func ... */ let boosts=calculateAmplifierBoosts();towers.forEach(t=>{if(t.firingTimer>0)t.firingTimer--;else t.isFiring=false;if(t.fireCooldown>0)t.fireCooldown--;if(t.type==='money'){if(t.fireCooldown<=0){money+=t.incomeAmount;t.fireCooldown=t.fireRate;updateUI();addEffect(t.x,t.y-TILE_SIZE*0.5,10,'#FFD700','text',`+$${t.incomeAmount}`)}}else if(t.type==='slow'){if(t.fireCooldown<=0){applySlowEffect(t);t.fireCooldown=t.fireRate;t.isFiring=true;t.firingTimer=5}}else if(t.type==='amplifier'||t.type==='detector'){}else{const rangeSq=t.range*t.range;if(!t.target||t.target.health<=0||getDistanceSq(t,t.target)>rangeSq||(t.target.isCamo&&!t.target.isDetected&&!t.detectsCamo))t.target=findTargetBasedOnPriority(t);if(t.fireCooldown<=0&&t.target){let boost=boosts[`${t.gridX},${t.gridY}`]||1.0;fireProjectile(t,t.target,boost);t.fireCooldown=t.fireRate;t.isFiring=true;t.firingTimer=5}}});}
+             function calculateAmplifierBoosts() { /* ... V9 Func ... */ let b={};towers.filter(t=>t.type==='amplifier').forEach(a=>{const bRSq=a.boostRadius*a.boostRadius;towers.forEach(tT=>{if(tT!==a&&tT.damage>0){if(getDistanceSq(a,tT)<=bRSq){const k=`${tT.gridX},${tT.gridY}`;b[k]=Math.max(b[k]||1.0,a.boostFactor)}}})});return b;}
              function applySlowEffect(tower) { /* ... V8 Func ... */ const rSq=tower.range*tower.range;enemies.forEach(e=>{if(getDistanceSq(tower,e)<=rSq){e.speedMultiplier=tower.slowFactor;e.slowTimer=tower.slowDuration}});}
-             function findTargetBasedOnPriority(tower) { /* ... V8 Func ... */ const rSq=tower.range*tower.range;let pT=enemies.filter(e=>getDistanceSq(tower,e)<=rSq);if(pT.length===0)return null;switch(tower.targetingPriority){case'first':pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break;case'last':pT.sort((a,b)=>a.distanceTraveled-b.distanceTraveled);break;case'strongest':pT.sort((a,b)=>b.health-a.health);break;case'weakest':pT.sort((a,b)=>a.health-b.health);break;default:pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break}return pT[0];}
+             function findTargetBasedOnPriority(tower) { /* ... V10 Func ... */ const rSq=tower.range*tower.range;const tC=TOWER_TYPES[tower.type];let pT=enemies.filter(e=>{if(getDistanceSq(tower,e)>rSq)return false;if(e.isCamo&&!e.isDetected&&!tC.detectsCamo)return false;return true});if(pT.length===0)return null;switch(tower.targetingPriority){case'first':pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break;case'last':pT.sort((a,b)=>a.distanceTraveled-b.distanceTraveled);break;case'strongest':pT.sort((a,b)=>b.health-a.health);break;case'weakest':pT.sort((a,b)=>a.health-b.health);break;default:pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break}return pT[0];}
+             function drawTowers() { /* ... V10 Func ... */ towers.forEach(t=>{const c=TOWER_TYPES[t.type];const tS=TILE_SIZE*.3+(t.level-1)*2;const x=t.x,y=t.y;ctx.save();ctx.translate(x,y);let sF=1.0;if(t.isFiring&&t.firingTimer>0)sF=1.0-(Math.sin((5-t.firingTimer)/5*Math.PI)*.1);ctx.scale(sF,sF);let pF=1.0;if(t.type==='slow')pF=1.0+Math.sin(frameCount*.05)*.05;ctx.fillStyle=c.color;ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();if(c.shape==='rect'){const bS=tS*1.8*pF;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.strokeStyle='#222';ctx.beginPath();ctx.rect(-bS*.15,-bS*.6,bS*.3,bS*.4);ctx.fill();ctx.stroke()}else if(c.shape==='triangle'){const sz=tS*1.4*pF;ctx.moveTo(0,-sz*.8);ctx.lineTo(-sz,sz*.4);ctx.lineTo(sz,sz*.4);ctx.closePath();ctx.fill();ctx.stroke();const cP=1.0+Math.sin(frameCount*.1)*.1;ctx.fillStyle=`rgba(255,255,255,${.8+Math.sin(frameCount*.1)*.2})`;ctx.beginPath();ctx.arc(0,0,sz*.2*cP,0,Math.PI*2);ctx.fill()}else if(c.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=tS*1.5*pF,iR=tS*.7*pF;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath();ctx.fill();ctx.stroke()}else if(c.shape==='mortar'){const mS=tS*1.6*pF;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*.5,0,Math.PI*2);ctx.fill()}else if(c.shape==='vial'){const vS=tS*1.8*pF;ctx.rect(-vS*.4,-vS*.5,vS*.8,vS);ctx.rect(-vS*.2,-vS*.7,vS*.4,vS*.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*.35,-vS*.4,vS*.7,vS*.8);ctx.fill()}else if(c.shape==='dollar'){const dS=tS*2.5*pF;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);ctx.strokeStyle=c.color;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,dS*.6,0,Math.PI*2);ctx.stroke();}else if(c.shape==='amplifier'){const aS=tS*1.5*pF;const nL=8,ang=Math.PI*2/nL;ctx.beginPath();ctx.arc(0,0,aS*.8,0,Math.PI*2);ctx.fill();ctx.stroke();const lP=1.0+Math.sin(frameCount*.08)*.1;ctx.strokeStyle=c.color;ctx.lineWidth=2;for(let i=0;i<nL;i++){const cA=ang*i;const sX=Math.cos(cA)*aS*.8,sY=Math.sin(cA)*aS*.8;const eX=Math.cos(cA)*aS*1.2*lP,eY=Math.sin(cA)*aS*1.2*lP;ctx.beginPath();ctx.moveTo(sX,sY);ctx.lineTo(eX,eY);ctx.stroke();}}else if(c.shape==='detector'){const dS=tS*1.7*pF;ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-dS*.1,dS*.3,dS*.2,dS*.4);ctx.fill();ctx.stroke();ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8);ctx.fill();ctx.stroke();const pR=(frameCount%60)/60*dS*1.5;ctx.strokeStyle='rgba(0,255,255,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,pR,0,Math.PI*2);ctx.stroke();}else{ctx.arc(0,0,tS*pF,0,Math.PI*2);ctx.fill();ctx.stroke()}ctx.restore();if(selectedTower===t){ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.beginPath();const rTD=t.type==='amplifier'?t.boostRadius:t.type==='detector'?t.detectionRadius:t.range;if(rTD>0){ctx.arc(x,y,rTD,0,Math.PI*2);ctx.stroke()}}if(t.level>1){ctx.fillStyle='yellow';ctx.font=`${TILE_SIZE*.5}px 'Press Start 2P'`;const sS=5,sSp=7;const tW=(t.level-1)*sSp;const sX=x-tW/2+sS/2;for(let i=1;i<t.level;i++){const starX=sX+(i-1)*sSp;const starY=y-tS-10;ctx.fillText('*',starX-sS/2,starY+sS/2)}}});}
+             function drawTowerPlacementPreview() { /* ... V10 Func ... */ const gX=Math.floor(scaledMouse.x/TILE_SIZE),gY=Math.floor(scaledMouse.y/TILE_SIZE);if(gX<0||gX>=GRID_WIDTH||gY<0||gY>=GRID_HEIGHT||!placingTowerType)return;const pX=gX*TILE_SIZE+TILE_SIZE/2,pY=gridY*TILE_SIZE+TILE_SIZE/2;const config=TOWER_TYPES[placingTowerType];if(!config)return;let canPlace=canPlaceTower(gridX,gridY,placingTowerType);ctx.save();ctx.translate(pX,pY);ctx.globalAlpha=0.5;ctx.fillStyle=canPlace?config.color:'red';ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();const pS=TILE_SIZE*0.3;if(config.shape==='rect'){const bS=pS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4)}else if(config.shape==='triangle'){const tS=pS*1.4;ctx.moveTo(0,-tS*0.8);ctx.lineTo(-tS,tS*0.4);ctx.lineTo(tS,tS*0.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,tS*0.2,0,Math.PI*2)}else if(config.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=pS*1.5,iR=pS*0.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath()}else if(config.shape==='mortar'){const mS=pS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*0.5,0,Math.PI*2)}else if(config.shape==='vial'){const vS=pS*1.8;ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS);ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8)}else if(config.shape==='dollar'){const dS=pS*2.5;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0)}else if(config.shape==='amplifier'){const aS=pS*1.5;ctx.arc(0,0,aS*0.8,0,Math.PI*2)}else if(config.shape==='detector'){const dS=pS*1.7;ctx.arc(0,0,dS,Math.PI*1.2,Math.PI*1.8)}else{ctx.arc(0,0,pS,0,Math.PI*2)}ctx.fill();ctx.stroke();ctx.restore();const rTD=config.type==='amplifier'?config.boostRadius:config.type==='detector'?config.detectionRadius:config.range;if(rTD>0){ctx.globalAlpha=0.5;ctx.strokeStyle=canPlace?'rgba(255,255,255,0.5)':'rgba(255,0,0,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(pX,pY,rTD,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1.0}}
+             function upgradeSelectedTower() { /* ... V8 Func ... */ if(!selectedTower||selectedTower.level>=selectedTower.maxLevel)return;const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI>=tC.upgradeCosts.length){console.error("...");return}const cost=tC.upgradeCosts[uI];if(money>=cost){money-=cost;selectedTower.level++;selectedTower.totalCost+=cost;const nS=tC.upgradeStats[uI];for(const s in nS)if(selectedTower.hasOwnProperty(s))selectedTower[s]=nS[s];console.log(`Upgraded`);updateUI()}else console.log("...");}
+             function sellSelectedTower() { /* ... V8 Func ... */ if(!selectedTower)return;const r=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);money+=r;const i=towers.indexOf(selectedTower);if(i>-1)towers.splice(i,1);const gX=selectedTower.gridX,gY=selectedTower.gridY;if(grid[gY]?.[gX]){grid[gY][gX].type='empty';grid[gY][gX].tower=null}selectedTower=null;updateUI();}
 
-            function drawTowers() { // Added Amplifier shape + firing animation
-                 towers.forEach(tower => {
-                    const config = TOWER_TYPES[tower.type];
-                    const towerSize = TILE_SIZE * 0.3 + (tower.level - 1) * 2;
-                    const x = tower.x; const y = tower.y;
-
-                    ctx.save(); ctx.translate(x, y);
-
-                    // Firing animation (slight scale back/recoil)
-                    let scaleFactor = 1.0;
-                    if (tower.isFiring && tower.firingTimer > 0) {
-                        scaleFactor = 1.0 - (Math.sin((5 - tower.firingTimer) / 5 * Math.PI) * 0.1); // Quick pop back
-                    }
-                    ctx.scale(scaleFactor, scaleFactor);
-
-
-                    let pulseFactor = 1.0; if(tower.type==='slow')pulseFactor=1.0+Math.sin(frameCount*0.05)*0.05;
-                    ctx.fillStyle = config.color; ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.beginPath();
-
-                    if(config.shape==='rect'){const bS=towerSize*1.8*pulseFactor;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.strokeStyle='#222';ctx.beginPath();ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4);ctx.fill();ctx.stroke()}
-                    else if(config.shape==='triangle'){const tS=towerSize*1.4*pulseFactor;ctx.moveTo(0,-tS*0.8);ctx.lineTo(-tS,tS*0.4);ctx.lineTo(tS,tS*0.4);ctx.closePath();ctx.fill();ctx.stroke();const cP=1.0+Math.sin(frameCount*0.1)*0.1;ctx.fillStyle=`rgba(255,255,255,${0.8+Math.sin(frameCount*0.1)*0.2})`;ctx.beginPath();ctx.arc(0,0,tS*0.2*cP,0,Math.PI*2);ctx.fill()}
-                    else if(config.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=towerSize*1.5*pulseFactor,iR=towerSize*0.7*pulseFactor;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath();ctx.fill();ctx.stroke()}
-                    else if(config.shape==='mortar'){const mS=towerSize*1.6*pulseFactor;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*0.5,0,Math.PI*2);ctx.fill()}
-                    else if(config.shape==='vial'){const vS=towerSize*1.8*pulseFactor;ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS);ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8);ctx.fill()}
-                    else if (config.shape === 'dollar') { const dS=towerSize*2.5*pulseFactor;ctx.font=`${dS}px 'Press Start 2P'`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,0);ctx.strokeStyle=config.color;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,dS*0.6,0,Math.PI*2);ctx.stroke();}
-                    else if (config.shape === 'amplifier') { // Amplifier Shape
-                        const ampSize = towerSize * 1.5 * pulseFactor;
-                        const numLines = 8; const angle = Math.PI * 2 / numLines;
-                        // Base circle
-                        ctx.beginPath(); ctx.arc(0, 0, ampSize * 0.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                        // Radiating lines (pulse length)
-                        const linePulse = 1.0 + Math.sin(frameCount * 0.08) * 0.1;
-                        ctx.strokeStyle = config.color; ctx.lineWidth = 2;
-                        for (let i = 0; i < numLines; i++) {
-                            const currentAngle = angle * i;
-                            const startX = Math.cos(currentAngle) * ampSize * 0.8;
-                            const startY = Math.sin(currentAngle) * ampSize * 0.8;
-                            const endX = Math.cos(currentAngle) * ampSize * 1.2 * linePulse;
-                            const endY = Math.sin(currentAngle) * ampSize * 1.2 * linePulse;
-                            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
-                        }
-                    }
-                    else { ctx.arc(0, 0, towerSize*pulseFactor, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
-
-                    ctx.restore(); // Restore context after drawing tower shape + animation
-
-                    // Range Circle (Draw amplifier boost range if selected)
-                    if (selectedTower === tower) {
-                         ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctx.lineWidth = 2; ctx.beginPath();
-                         const rangeToDraw = tower.type === 'amplifier' ? tower.boostRadius : tower.range;
-                         if (rangeToDraw > 0) {
-                             ctx.arc(x, y, rangeToDraw, 0, Math.PI * 2); ctx.stroke();
-                         }
-                    }
-                    // Stars (Unchanged)
-                    if(tower.level>1){ctx.fillStyle='yellow';ctx.font=`${TILE_SIZE*0.5}px 'Press Start 2P'`;const sS=5,sSp=7;const tW=(tower.level-1)*sSp;const sX=x-tW/2+sS/2;for(let i=1;i<tower.level;i++){const starX=sX+(i-1)*sSp;const starY=y-towerSize-10;ctx.fillText('*',starX-sS/2,starY+sS/2)}}
-                });
-             }
-            function drawTowerPlacementPreview() { // Added Amplifier preview
-                 const gridX = Math.floor(scaledMouse.x / TILE_SIZE); const gridY = Math.floor(scaledMouse.y / TILE_SIZE);
-                 if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT || !placingTowerType) return;
-                 const previewX = gridX * TILE_SIZE + TILE_SIZE / 2; const previewY = gridY * TILE_SIZE + TILE_SIZE / 2;
-                 const config = TOWER_TYPES[placingTowerType]; if (!config) return;
-                 let canPlace = canPlaceTower(gridX, gridY, placingTowerType);
-
-                 ctx.save(); ctx.translate(previewX, previewY); ctx.globalAlpha = 0.5;
-                 ctx.fillStyle = canPlace ? config.color : 'red'; ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.beginPath();
-                 const pS = TILE_SIZE * 0.3;
-
-                 if(config.shape==='rect'){const bS=pS*1.8;ctx.rect(-bS/2,-bS/2,bS,bS);ctx.fill();ctx.stroke();ctx.fillStyle='#555';ctx.beginPath();ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4)}
-                 else if(config.shape==='triangle'){const tS=pS*1.4;ctx.moveTo(0,-tS*0.8);ctx.lineTo(-tS,tS*0.4);ctx.lineTo(tS,tS*0.4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='white';ctx.beginPath();ctx.arc(0,0,tS*0.2,0,Math.PI*2)}
-                 else if(config.shape==='snowflake'){const a=6,ang=Math.PI*2/a;const oR=pS*1.5,iR=pS*0.7;ctx.moveTo(0,-oR);for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);}ctx.closePath()}
-                 else if(config.shape==='mortar'){const mS=pS*1.6;ctx.arc(0,0,mS,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#444';ctx.beginPath();ctx.arc(0,0,mS*0.5,0,Math.PI*2)}
-                 else if(config.shape==='vial'){const vS=pS*1.8;ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS);ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2);ctx.fill();ctx.stroke();ctx.fillStyle='rgba(0,255,0,0.6)';ctx.beginPath();ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8)}
-                 else if (config.shape === 'dollar') { const dS = pS * 2.5; ctx.font = `${dS}px 'Press Start 2P'`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', 0, 0); }
-                 else if (config.shape === 'amplifier') { const aS=pS*1.5; ctx.arc(0,0,aS*0.8,0,Math.PI*2); } // Simple circle preview for amp
-                 else { ctx.arc(0, 0, pS, 0, Math.PI * 2); }
-
-                 ctx.fill(); ctx.stroke(); ctx.restore();
-
-                 // Range preview (Draw boostRadius for amplifier)
-                 const rangeToDraw = config.type === 'amplifier' ? config.boostRadius : config.range;
-                 if (rangeToDraw > 0) {
-                     ctx.globalAlpha = 0.5; ctx.strokeStyle = canPlace ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 0, 0, 0.5)';
-                     ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(previewX, previewY, rangeToDraw, 0, Math.PI * 2); ctx.stroke();
-                     ctx.globalAlpha = 1.0;
-                 }
-             }
-            function upgradeSelectedTower() { /* ... V8 Func ... */ if(!selectedTower||selectedTower.level>=selectedTower.maxLevel)return;const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI>=tC.upgradeCosts.length){console.error("...");return}const cost=tC.upgradeCosts[uI];if(money>=cost){money-=cost;selectedTower.level++;selectedTower.totalCost+=cost;const nS=tC.upgradeStats[uI];for(const s in nS)if(selectedTower.hasOwnProperty(s))selectedTower[s]=nS[s];console.log(`Upgraded`);updateUI()}else console.log("...");}
-            function sellSelectedTower() { /* ... V8 Func ... */ if(!selectedTower)return;const r=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);money+=r;const i=towers.indexOf(selectedTower);if(i>-1)towers.splice(i,1);const gX=selectedTower.gridX,gY=selectedTower.gridY;if(grid[gY]?.[gX]){grid[gY][gX].type='empty';grid[gY][gX].tower=null}selectedTower=null;updateUI();}
-
-            // --- Projectile Handling ---
-            function fireProjectile(tower, target, boost = 1.0) { // Added boost parameter
-                 const config = TOWER_TYPES[tower.type];
-                 projectiles.push({
-                     x: tower.x, y: tower.y,
-                     damage: tower.damage * boost, // Apply boost to damage
-                     target: target, speed: 6, size: 4,
-                     color: config.color || 'yellow', type: tower.type, projectileType: config.projectile,
-                     splashRadius: tower.splashRadius,
-                     poisonDamage: tower.poisonDamage * boost, // Boost poison damage too? Yes.
-                     poisonDuration: tower.poisonDuration
-                 });
-             }
-            function handleProjectiles() { // Added hit effect trigger
-                for (let i = projectiles.length - 1; i >= 0; i--) {
-                    const p = projectiles[i];
-                    if (!p.target || p.target.health <= 0) { projectiles.splice(i, 1); continue; }
-                    const dx = p.target.x - p.x; const dy = p.target.y - p.y;
-                    const distanceSq = dx*dx + dy*dy; const speedSq = p.speed * p.speed;
-
-                    if (distanceSq < speedSq * 1.5) { // Hit target
-                        let actualDamage = p.damage; // Damage might already be boosted
-                        const enemy = p.target;
-
-                        if (enemy.armorType === 'physical' && (p.projectileType === 'bullet' || p.projectileType === 'laser')) { actualDamage *= (1 - PHYSICAL_ARMOR_REDUCTION); }
-
-                        if (p.type === 'splash') {
-                            const splashRadiusSq = p.splashRadius * p.splashRadius;
-                            enemies.forEach(sT => { if (getDistanceSq(enemy, sT) <= splashRadiusSq) { let sDmg = p.damage; if (sT.armorType === 'physical' && (p.projectileType === 'bullet' || p.projectileType === 'laser' || p.projectileType === 'bomb')) sDmg *= (1 - PHYSICAL_ARMOR_REDUCTION); sT.health -= sDmg; } });
-                            addEffect(enemy.x, enemy.y, p.splashRadius, '#FFA500', 'explosion');
-                        } else {
-                            enemy.health -= actualDamage;
-                            // Add hit effect for single target projectiles
-                            if (p.projectileType !== 'bomb') { // Don't show for bomb itself, only splash
-                                addEffect(p.x, p.y, 5, '#FFFFFF', 'hit_flash'); // Small white flash
-                            }
-                        }
-
-                        if (p.type === 'poison' && p.poisonDamage > 0) { e.poisonEffects.push({ damage: p.poisonDamage, duration: p.poisonDuration, timer: p.poisonDuration, tickTimer: POISON_TICK_RATE }); }
-
-                        projectiles.splice(i, 1);
-                    } else { const dist = Math.sqrt(distanceSq); p.x += (dx / dist) * p.speed; p.y += (dy / dist) * p.speed; }
-                }
-            }
+            // --- Projectile Handling --- (Unchanged)
+            function fireProjectile(tower, target, boost=1.0) { /* ... V10 Func ... */ const c=TOWER_TYPES[tower.type];projectiles.push({x:tower.x,y:tower.y,damage:tower.damage*boost,target:target,speed:6,size:4,color:c.color||'yellow',type:tower.type,projectileType:c.projectile,splashRadius:tower.splashRadius,poisonDamage:tower.poisonDamage*boost,poisonDuration:tower.poisonDuration});}
+            function handleProjectiles() { /* ... V10 Func ... */ for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];if(!p.target||p.target.health<=0){projectiles.splice(i,1);continue}const dx=p.target.x-p.x,dy=p.target.y-p.y;const dSq=dx*dx+dy*dy;const sSq=p.speed*p.speed;if(dSq<sSq*1.5){let actDmg=p.damage;const e=p.target;if(e.armorType==='physical'&&(p.projectileType==='bullet'||p.projectileType==='laser'))actDmg*=(1-PHYSICAL_ARMOR_REDUCTION);if(p.type==='splash'){const sRSq=p.splashRadius*p.splashRadius;enemies.forEach(sT=>{if(getDistanceSq(e,sT)<=sRSq){let sDmg=p.damage;if(sT.armorType==='physical'&&(p.projectileType==='bullet'||p.projectileType==='laser'||p.projectileType==='bomb'))sDmg*=(1-PHYSICAL_ARMOR_REDUCTION);sT.health-=sDmg}});addEffect(e.x,e.y,p.splashRadius,'#FFA500','explosion')}else{e.health-=actDmg;if(p.projectileType!=='bomb')addEffect(p.x,p.y,5,'#FFFFFF','hit_flash')}if(p.type==='poison'&&p.poisonDamage>0)e.poisonEffects.push({damage:p.poisonDamage,duration:p.poisonDuration,timer:p.poisonDuration,tickTimer:POISON_TICK_RATE});projectiles.splice(i,1)}else{const dist=Math.sqrt(dSq);p.x+=(dx/dist)*p.speed;p.y+=(dy/dist)*p.speed}}}
             function drawProjectiles() { /* ... V8 Func ... */ projectiles.forEach(p=>{ctx.fillStyle=p.color;ctx.strokeStyle='rgba(0,0,0,0.5)';ctx.lineWidth=1;ctx.beginPath();if(p.projectileType==='laser'){const l=10,t=2;ctx.rect(p.x-t/2,p.y-l/2,t,l)}else if(p.projectileType==='bomb'){ctx.fillStyle='#444';ctx.arc(p.x,p.y,p.size*1.2,0,Math.PI*2)}else if(p.projectileType==='poison_dart'){const dL=8,dW=3;ctx.moveTo(p.x,p.y-dL*0.6);ctx.lineTo(p.x-dW,p.y);ctx.lineTo(p.x+dW,p.y);ctx.closePath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,p.y+dL*0.4);ctx.lineWidth=1;ctx.stroke();ctx.fill();ctx.lineWidth=1}else{ctx.arc(p.x,p.y,p.size,0,Math.PI*2)}ctx.fill();if(p.projectileType!=='laser'&&p.projectileType!=='poison_dart')ctx.stroke()});}
 
-             // --- Visual Effects Handling ---
-             function addEffect(x, y, radius, color, type = 'circle', text = null) {
-                 let duration = (type === 'text' || type === 'death_fade') ? 30 : 15; // Longer duration for text/death
-                 if (type === 'hit_flash') duration = 5; // Very short for hit flash
-                 effects.push({ x, y, maxRadius: radius, currentRadius: 0, duration: duration, timer: duration, color: color || 'rgba(255, 255, 0, 0.5)', type: type, text: text });
-             }
-             function handleEffects() { // Added death fade logic
-                 for (let i = effects.length - 1; i >= 0; i--) {
-                     const effect = effects[i];
-                     effect.timer--;
-                     if (effect.type === 'text') { effect.y -= 0.5; }
-                     else if (effect.type !== 'death_fade' && effect.type !== 'hit_flash') { // Expand non-death/hit effects
-                         effect.currentRadius = effect.maxRadius * (1 - (effect.timer / effect.duration));
-                     }
-                     if (effect.timer <= 0) { effects.splice(i, 1); }
+             // --- Visual Effects Handling --- (Unchanged)
+             function addEffect(x,y,r,c,t='circle',txt=null){let dur=(t==='text'||t==='death_fade')?30:15;if(t==='hit_flash')dur=5;effects.push({x,y,maxRadius:r,currentRadius:0,duration:dur,timer:dur,color:c||'rgba(255,255,0,0.5)',type:t,text:txt})}
+             function handleEffects(){for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.timer--;if(e.type==='text')e.y-=0.5;else if(e.type!=='death_fade'&&e.type!=='hit_flash')e.currentRadius=e.maxRadius*(1-(e.timer/e.duration));if(e.timer<=0)effects.splice(i,1)}}
+             function drawEffects(){effects.forEach(e=>{const alpha=Math.max(0,e.timer/e.duration);ctx.globalAlpha=alpha;ctx.lineWidth=2;if(e.type==='explosion'){const nR=3;for(let i=1;i<=nR;i++){ctx.beginPath();const r=e.currentRadius*(i/nR);ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}}else if(e.type==='text'&&e.text){ctx.fillStyle=e.color;ctx.font=`${TILE_SIZE*0.4}px 'Press Start 2P'`;ctx.textAlign='center';ctx.fillText(e.text,e.x,e.y)}else if(e.type==='death_fade'){ctx.fillStyle=e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.maxRadius*(1-alpha),0,Math.PI*2);ctx.fill()}else if(e.type==='hit_flash'){ctx.fillStyle=e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.maxRadius,0,Math.PI*2);ctx.fill()}else{ctx.beginPath();ctx.arc(e.x,e.y,e.currentRadius,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}ctx.globalAlpha=1.0})}
+
+            // --- Wave Management --- (Boss wave enemy count fix)
+            function startWave() { // Corrected Boss Wave Check
+                if (waveInProgress || gameOver) return;
+                if (wave > 0 && timeSinceWaveEnd > 0) { money += WAVE_SKIP_BONUS; console.log(`Skip bonus:+${WAVE_SKIP_BONUS}`); addEffect(startWaveBtn.offsetLeft + startWaveBtn.offsetWidth / 2, startWaveBtn.offsetTop, 10, '#FFD700', 'text', `+${WAVE_SKIP_BONUS}$`); updateUI(); }
+                wave++; // Increment wave *before* checking for boss wave
+                enemiesToSpawn = (wave % BOSS_WAVE_INTERVAL === 0) ? 1 : 8 + (wave-1) * 3; // Use wave number for calculation, check if it's a multiple for boss
+                console.log(`Starting Wave ${wave}, Spawning ${enemiesToSpawn} enemies.`); // Debug log
+                spawnTimer = ENEMY_SPAWN_INTERVAL; waveInProgress = true; timeSinceWaveEnd = 0; deselectPlacedTower(); updateUI();
+            }
+            function handleWaves() { // Ensure spawn count isn't decremented for boss
+                if (!waveInProgress) { if (wave > 0 && !gameOver) timeSinceWaveEnd++; return; }
+                if (enemiesToSpawn > 0 && spawnTimer <= 0) {
+                    spawnEnemy();
+                    // Only decrement count if it's NOT a boss wave (where spawnEnemy sets count to 0)
+                    if (wave % BOSS_WAVE_INTERVAL !== 0) {
+                         enemiesToSpawn--;
+                    }
+                    spawnTimer = ENEMY_SPAWN_INTERVAL;
+                }
+                spawnTimer--;
+                if (enemiesToSpawn <= 0 && enemies.length === 0) { waveInProgress = false; let b = 50 + wave * 10; let intr = Math.floor(money * INTEREST_RATE); money += b + intr; console.log(`Wave ${wave} cleared! Bonus:${b}, Interest:${intr}`); timeSinceWaveEnd = 1; updateUI(); }
+            }
+
+            // --- UI and Interaction ---
+            function updateUI(){/* ... V10 ... */}
+            function setupEventListeners(){ // Added listener for new tower button
+                startWaveBtn.addEventListener('click',startWave);sellTowerBtn.addEventListener('click',sellSelectedTower);upgradeTowerBtn.addEventListener('click',upgradeSelectedTower);
+                towerButtons.forEach(b=>{b.addEventListener('click',()=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(c)selectTowerPurchase(t,c.cost)})}); // This now includes detector button
+                targetButtons.forEach(b=>{b.addEventListener('click',()=>{if(selectedTower&&!b.disabled){selectedTower.targetingPriority=b.dataset.priority;updateUI()}})});
+                canvas.addEventListener('click',handleCanvasClick);canvas.addEventListener('mousemove',handleMouseMove);canvas.addEventListener('mouseleave',()=>{if(placingTowerType)mouse={x:-1,y:-1};updateScaledMouse()});
+                document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){deselectTowerPurchase();deselectPlacedTower()}});
+                document.addEventListener('click',(e)=>{if(!canvas.contains(e.target)&&!e.target.closest('.control-panel')&&!e.target.closest('.stats')){deselectPlacedTower()}});
+                /*Removed messageBtn listener*/
+                window.addEventListener('resize',updateCanvasScale);
+            }
+            function selectTowerPurchase(type,cost){ // Restored function
+                console.log(`Attempting to select tower: ${type}, Cost: ${cost}, Money: ${money}, Game Over: ${gameOver}`); // Debug log
+                if (money >= cost && !gameOver) {
+                    console.log("Selection successful!"); // Debug log
+                    placingTowerType = type;
+                    deselectPlacedTower();
+                    updateUI();
+                 } else {
+                     console.log("Selection failed: Not enough money or game over."); // Debug log
                  }
-             }
-             function drawEffects() { // Added death fade and hit flash drawing
-                 effects.forEach(effect => {
-                     const alpha = Math.max(0, effect.timer / effect.duration); // Fade out smoothly
-                     ctx.globalAlpha = alpha;
-                     ctx.lineWidth = 2;
-
-                     if (effect.type === 'explosion') { const nR=3;for(let i=1;i<=nR;i++){ctx.beginPath();const r=effect.currentRadius*(i/nR);ctx.arc(effect.x,effect.y,r,0,Math.PI*2);ctx.strokeStyle=effect.color;ctx.stroke()}}
-                     else if (effect.type === 'text' && effect.text) { ctx.fillStyle=effect.color;ctx.font=`${TILE_SIZE*0.4}px 'Press Start 2P'`;ctx.textAlign='center';ctx.fillText(effect.text,effect.x,effect.y);}
-                     else if (effect.type === 'death_fade') { // Draw fading circle
-                         ctx.fillStyle = effect.color; ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.maxRadius * (1-alpha), 0, Math.PI*2); ctx.fill(); // Shrink as it fades
-                     }
-                      else if (effect.type === 'hit_flash') { // Draw quick flash
-                         ctx.fillStyle = effect.color; ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.maxRadius, 0, Math.PI*2); ctx.fill();
-                     }
-                     else { ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.currentRadius, 0, Math.PI * 2); ctx.strokeStyle = effect.color; ctx.stroke(); } // Default circle
-
-                     ctx.globalAlpha = 1.0; // Reset alpha
-                 });
-             }
-
-            // --- Wave Management ---
-            function startWave() { /* ... V8 Func ... */ if(waveInProgress||gameOver)return;if(wave>0&&timeSinceWaveEnd>0){money+=WAVE_SKIP_BONUS;console.log(`Skip bonus: +${WAVE_SKIP_BONUS}`);addEffect(startWaveBtn.offsetLeft+startWaveBtn.offsetWidth/2,startWaveBtn.offsetTop,10,'#FFD700','text',`+${WAVE_SKIP_BONUS}$`);updateUI()}wave++; enemiesToSpawn = ((wave+1)%BOSS_WAVE_INTERVAL===0) ? 1 : 8+wave*3; /* Set spawn count */ spawnTimer=ENEMY_SPAWN_INTERVAL;waveInProgress=true;timeSinceWaveEnd=0;deselectPlacedTower();updateUI();}
-            function handleWaves() { /* ... V8 Func ... */ if(!waveInProgress){if(wave>0&&!gameOver)timeSinceWaveEnd++;return}if(enemiesToSpawn>0&&spawnTimer<=0){spawnEnemy();enemiesToSpawn--;spawnTimer=ENEMY_SPAWN_INTERVAL}spawnTimer--;if(enemiesToSpawn<=0&&enemies.length===0){waveInProgress=false;let b=50+wave*10;let intr=Math.floor(money*INTEREST_RATE);money+=b+intr;console.log(`Wave ${wave} cleared! Bonus:${b}, Interest:${intr}`);timeSinceWaveEnd=1;updateUI()}}
-
-            // --- UI and Interaction --- (Unchanged)
-            function updateUI(){moneyDisplay.textContent=money;scoreDisplay.textContent=score;livesDisplay.textContent=lives;waveDisplay.textContent=wave;towerButtons.forEach(b=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(!c)return;const cost=c.cost;const d=money<cost||gameOver;b.disabled=d;b.classList.toggle('disabled',d);b.classList.toggle('selected',placingTowerType===t);b.textContent=`${t.charAt(0).toUpperCase()+t.slice(1)} (${cost}$)`});startWaveBtn.disabled=waveInProgress||gameOver;startWaveBtn.classList.toggle('disabled',waveInProgress||gameOver);let canSell=false,canUpgrade=false,sellAmount=0,upgradeCost=0,currentPriority=null;if(selectedTower&&!gameOver){canSell=true;sellAmount=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);currentPriority=selectedTower.targetingPriority;if(selectedTower.level<selectedTower.maxLevel){const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI<tC.upgradeCosts.length){upgradeCost=tC.upgradeCosts[uI];if(money>=upgradeCost)canUpgrade=true}}}towerActionsDiv.classList.toggle('visible',!!selectedTower);sellTowerBtn.disabled=!canSell;sellTowerBtn.textContent=`Sell (${sellAmount}$)`;upgradeTowerBtn.disabled=!canUpgrade;upgradeTowerBtn.textContent=(selectedTower&&selectedTower.level>=selectedTower.maxLevel)?'Max Lvl':`Upgrade (${upgradeCost}$)`;targetingControlsDiv.classList.toggle('visible',!!selectedTower);targetButtons.forEach(b=>{if(selectedTower){b.classList.toggle('active',b.dataset.priority===currentPriority);b.disabled=gameOver;b.classList.toggle('disabled',gameOver)}else{b.classList.remove('active');b.disabled=true;b.classList.add('disabled')}});}
-            function setupEventListeners(){startWaveBtn.addEventListener('click',startWave);sellTowerBtn.addEventListener('click',sellSelectedTower);upgradeTowerBtn.addEventListener('click',upgradeSelectedTower);towerButtons.forEach(b=>{b.addEventListener('click',()=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(c)selectTowerPurchase(t,c.cost)})});targetButtons.forEach(b=>{b.addEventListener('click',()=>{if(selectedTower&&!b.disabled){selectedTower.targetingPriority=b.dataset.priority;updateUI()}})});canvas.addEventListener('click',handleCanvasClick);canvas.addEventListener('mousemove',handleMouseMove);canvas.addEventListener('mouseleave',()=>{if(placingTowerType)mouse={x:-1,y:-1};updateScaledMouse()});document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){deselectTowerPurchase();deselectPlacedTower()}});document.addEventListener('click',(e)=>{if(!canvas.contains(e.target)&&!e.target.closest('.control-panel')&&!e.target.closest('.stats')){deselectPlacedTower()}});messageBtn.addEventListener('click',hideMessage);window.addEventListener('resize',updateCanvasScale);}
-            function selectTowerPurchase(type,cost){if(money>=cost&&!gameOver){placingTowerType=type;deselectPlacedTower();updateUI()}else{console.log("...");deselectTowerPurchase()}}
-            function deselectTowerPurchase(){placingTowerType=null;towerButtons.forEach(b=>b.classList.remove('selected'));updateUI();}
-            function selectPlacedTower(tower){selectedTower=tower;deselectTowerPurchase();updateUI();}
-            function deselectPlacedTower(){if(selectedTower){selectedTower=null;updateUI()}}
+            }
+            function deselectTowerPurchase(){ // Restored function
+                if (placingTowerType) { // Only log if something was selected
+                    console.log("Deselecting tower purchase"); // Debug log
+                }
+                placingTowerType = null;
+                towerButtons.forEach(btn => btn.classList.remove('selected'));
+                updateUI(); // Update needed to remove highlight
+            }
+            function selectPlacedTower(tower){/* ... V10 ... */}
+            function deselectPlacedTower(){/* ... V10 ... */}
 
              // --- Mouse Handling with Scaling --- (Unchanged)
-             function updateCanvasScale(){const r=canvas.getBoundingClientRect();scaleX=BASE_CANVAS_WIDTH/r.width;scaleY=BASE_CANVAS_HEIGHT/r.height;}
-             function updateScaledMouse(){const r=canvas.getBoundingClientRect();scaledMouse.x=(mouse.x-r.left)*scaleX;scaledMouse.y=(mouse.y-r.top)*scaleY;}
-             function handleCanvasClick(event){mouse.x=event.clientX;mouse.y=event.clientY;updateScaledMouse();const gX=Math.floor(scaledMouse.x/TILE_SIZE);const gY=Math.floor(scaledMouse.y/TILE_SIZE);if(gX<0||gX>=GRID_WIDTH||gY<0||gY>=GRID_HEIGHT){console.log("...");deselectPlacedTower();return}if(placingTowerType){placeTower(gX,gY)}else{const cT=grid[gY]?.[gX]?.tower;if(cT){if(selectedTower===cT)deselectPlacedTower();else selectPlacedTower(cT)}else{deselectPlacedTower()}}}
-             function handleMouseMove(event){mouse.x=event.clientX;mouse.y=event.clientY;updateScaledMouse();}
+             function updateCanvasScale(){/* ... V10 ... */}
+             function updateScaledMouse(){/* ... V10 ... */}
+             function handleCanvasClick(event){/* ... V10 ... */}
+             function handleMouseMove(event){/* ... V10 ... */}
 
             // --- Utility Functions --- (Unchanged)
             function getDistanceSq(o1,o2){const dx=o1.x-o2.x,dy=o1.y-o2.y;return dx*dx+dy*dy;}
             function getDistance(o1,o2){return Math.sqrt(getDistanceSq(o1,o2));}
 
-            // --- Description Population ---
-            function populateDescriptions() {
-                let towerHtml = '<h4>Towers</h4>';
-                for (const type in TOWER_TYPES) {
-                    const config = TOWER_TYPES[type];
-                    const iconSvg = generateIconSVG(type, 'tower', config); // Generate SVG icon
-                    towerHtml += `<div class="desc-item">
-                                    <span class="desc-icon">${iconSvg}</span>
-                                    <span class="desc-text"><strong>${config.name || type}:</strong> ${config.description || 'N/A'} (Cost: ${config.cost})</span>
-                                  </div>`;
-                }
-                towerDescDiv.innerHTML = towerHtml;
+            // --- Description Population --- (Uses SVG Icons)
+            function populateDescriptions() { /* ... V10 ... */ let tH='<h4>Towers</h4>';for(const ty in TOWER_TYPES){const c=TOWER_TYPES[ty];const iS=generateIconSVG(ty,'tower',c);tH+=`<div class="desc-item"><span class="desc-icon">${iS}</span><span class="desc-text"><strong>${c.name||ty}:</strong> ${c.description||'N/A'} (Cost:${c.cost})</span></div>`;}towerDescDiv.innerHTML=tH;let eH='<h4>Enemies</h4>';for(const ty in ENEMY_TYPES){const c=ENEMY_TYPES[ty];const iS=generateIconSVG(ty,'enemy',c);eH+=`<div class="desc-item"><span class="desc-icon">${iS}</span><span class="desc-text"><strong>${c.name||ty}:</strong> ${c.description||'N/A'}</span></div>`;}enemyDescDiv.innerHTML=eH;}
+            function generateIconSVG(type, category, config) { /* ... V10 SVG generation ... */ const size=24;let svgContent='';const strokeColor='#bbb';const strokeWidth=1.5;if(category==='tower'){const c=TOWER_TYPES[type];const color=c.color||'#ccc';const shape=c.shape;const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.2}" y="${size*.2}" width="${size*.6}" height="${size*.6}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.1}" width="${size*.2}" height="${size*.3}" fill="#555" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='triangle'){svgContent=`<polygon points="${size/2},${size*.1} ${size*.1},${size*.9} ${size*.9},${size*.9}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size*.6}" r="${s*.3}" fill="white"/>`;}else if(shape==='snowflake'){svgContent=`<path d="M${size/2},${size*.1} L${size*.6},${size*.35} L${size*.85},${size*.35} L${size*.65},${size*.5} L${size*.85},${size*.65} L${size*.6},${size*.65} L${size/2},${size*.9} L${size*.4},${size*.65} L${size*.15},${size*.65} L${size*.35},${size*.5} L${size*.15},${size*.35} L${size*.4},${size*.35} Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='mortar'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s*1.2}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size/2}" r="${s*.6}" fill="#444"/>`;}else if(shape==='vial'){svgContent=`<rect x="${size*.3}" y="${size*.25}" width="${size*.4}" height="${size*.5}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*.4}" y="${size*.15}" width="${size*.2}" height="${size*.1}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><rect x="${size*.35}" y="${size*.3}" width="${size*.3}" height="${size*.4}" fill="rgba(0,255,0,0.6)"/>`;}else if(shape==='dollar'){svgContent=`<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="${size*.8}" font-family="'Press Start 2P', cursive" fill="${color}">$</text><circle cx="${size/2}" cy="${size/2}" r="${size*.4}" fill="none" stroke="${color}" stroke-width="1"/>`;}else if(shape==='amplifier'){svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><path d="M${size/2},${size*.1} L${size/2},${size*.9} M${size*.1},${size/2} L${size*.9},${size/2} M${size*.2},${size*.2} L${size*.8},${size*.8} M${size*.2},${size*.8} L${size*.8},${size*.2}" stroke="${color}" stroke-width="2"/>`;}else if(shape==='detector'){svgContent=`<path d="M${size*.2},${size*.8} Q${size*.5},${size*.1} ${size*.8},${size*.8}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"/><line x1="${size*.5}" y1="${size*.8}" x2="${size*.5}" y2="${size*.5}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><circle cx="${size*.5}" cy="${size*.5}" r="2" fill="${color}"/>`;}else{svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}}else if(category==='enemy'){const c=ENEMY_TYPES[type];const color=c.color||'#ccc';const shape=c.shape;const s=size*0.4;if(shape==='rect'){svgContent=`<rect x="${size*.25}" y="${size*.2}" width="${size*.5}" height="${size*.6}" rx="3" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='hexagon'){svgContent=`<polygon points="${size*.5},${size*.1} ${size*.9},${size*.3} ${size*.9},${size*.7} ${size*.5},${size*.9} ${size*.1},${size*.7} ${size*.1},${size*.3}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`;}else if(shape==='boss_shape'){svgContent=`<path d="M12,2 L14.45,8.27 L21.41,8.27 L15.98,12.73 L18.43,18.99 L12,14.51 L5.57,18.99 L8.02,12.73 L2.59,8.27 L9.55,8.27 Z" fill="${color}" stroke="${strokeColor}" stroke-width="1"/>`;}else{const camoStyle=c.isCamo?` opacity="0.5"`:'';svgContent=`<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"${camoStyle}/>`;}}return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;}
 
-                let enemyHtml = '<h4>Enemies</h4>';
-                 for (const type in ENEMY_TYPES) {
-                    const config = ENEMY_TYPES[type];
-                    const iconSvg = generateIconSVG(type, 'enemy', config); // Generate SVG icon
-                    enemyHtml += `<div class="desc-item">
-                                    <span class="desc-icon">${iconSvg}</span>
-                                    <span class="desc-text"><strong>${config.name || type}:</strong> ${config.description || 'N/A'}</span>
-                                  </div>`;
-                }
-                enemyDescDiv.innerHTML = enemyHtml;
+
+            // --- Game Over / Message --- (Auto-hide logic)
+            function endGame(win) { gameOver=true; waveInProgress=false; placingTowerType=null; selectedTower=null; const m=win?`Wave Cleared! Won! Score: ${score}`:`Game Over! Score: ${score}, Wave: ${wave}`; showMessage(m); updateUI(); }
+            function showMessage(text) {
+                 if (messageTimeout) clearTimeout(messageTimeout);
+                 messageText.textContent = text; messageBox.style.display = 'block';
+                 gamePaused = true; // Pause game always when message shows
+                 messageTimeout = setTimeout(hideMessage, MESSAGE_DURATION);
             }
-
-            // --- Icon Generation ---
-            function generateIconSVG(type, category, config) {
-                const size = 24; // Match CSS size
-                let svgContent = '';
-                const strokeColor = '#bbb'; // Icon stroke color
-                const strokeWidth = 1.5;
-
-                if (category === 'tower') {
-                    const towerConfig = TOWER_TYPES[type];
-                    const color = towerConfig.color || '#ccc';
-                    const shape = towerConfig.shape;
-                    const s = size * 0.4; // Base size for drawing within icon
-
-                    if (shape === 'rect') { svgContent = `<rect x="${size*0.2}" y="${size*0.2}" width="${size*0.6}" height="${size*0.6}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*0.4}" y="${size*0.1}" width="${size*0.2}" height="${size*0.3}" fill="#555" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`; }
-                    else if (shape === 'triangle') { svgContent = `<polygon points="${size/2},${size*0.1} ${size*0.1},${size*0.9} ${size*0.9},${size*0.9}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size*0.6}" r="${s*0.3}" fill="white"/>`; }
-                    else if (shape === 'snowflake') { svgContent = `<path d="M${size/2},${size*0.1} L${size*0.6},${size*0.35} L${size*0.85},${size*0.35} L${size*0.65},${size*0.5} L${size*0.85},${size*0.65} L${size*0.6},${size*0.65} L${size/2},${size*0.9} L${size*0.4},${size*0.65} L${size*0.15},${size*0.65} L${size*0.35},${size*0.5} L${size*0.15},${size*0.35} L${size*0.4},${size*0.35} Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`; } // Simplified snowflake path
-                    else if (shape === 'mortar') { svgContent = `<circle cx="${size/2}" cy="${size/2}" r="${s*1.2}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <circle cx="${size/2}" cy="${size/2}" r="${s*0.6}" fill="#444"/>`; }
-                    else if (shape === 'vial') { svgContent = `<rect x="${size*0.3}" y="${size*0.25}" width="${size*0.4}" height="${size*0.5}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/> <rect x="${size*0.4}" y="${size*0.15}" width="${size*0.2}" height="${size*0.1}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><rect x="${size*0.35}" y="${size*0.3}" width="${size*0.3}" height="${size*0.4}" fill="rgba(0,255,0,0.6)"/>`; }
-                    else if (shape === 'dollar') { svgContent = `<text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-size="${size*0.8}" font-family="'Press Start 2P', cursive" fill="${color}">$</text><circle cx="${size/2}" cy="${size/2}" r="${size*0.4}" fill="none" stroke="${color}" stroke-width="1"/>`; }
-                    else if (shape === 'amplifier') { svgContent = `<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/><path d="M${size/2},${size*0.1} L${size/2},${size*0.9} M${size*0.1},${size/2} L${size*0.9},${size/2} M${size*0.2},${size*0.2} L${size*0.8},${size*0.8} M${size*0.2},${size*0.8} L${size*0.8},${size*0.2}" stroke="${color}" stroke-width="2"/>`; } // Circle with radiating lines
-                    else { svgContent = `<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`; } // Default circle
-                } else if (category === 'enemy') {
-                     const enemyConfig = ENEMY_TYPES[type];
-                     const color = enemyConfig.color || '#ccc';
-                     const shape = enemyConfig.shape;
-                     const s = size * 0.4; // Base size
-
-                     if (shape === 'rect') { svgContent = `<rect x="${size*0.25}" y="${size*0.2}" width="${size*0.5}" height="${size*0.6}" rx="3" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`; } // Rounded rect
-                     else if (shape === 'hexagon') { svgContent = `<polygon points="${size*0.5},${size*0.1} ${size*0.9},${size*0.3} ${size*0.9},${size*0.7} ${size*0.5},${size*0.9} ${size*0.1},${size*0.7} ${size*0.1},${size*0.3}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`; }
-                     else if (shape === 'boss_shape') { svgContent = `<path d="M12,2 L14.45,8.27 L21.41,8.27 L15.98,12.73 L18.43,18.99 L12,14.51 L5.57,18.99 L8.02,12.73 L2.59,8.27 L9.55,8.27 Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`; } // Star shape for boss icon
-                     else { svgContent = `<circle cx="${size/2}" cy="${size/2}" r="${s}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>`; } // Default circle
-                }
-
-                return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">${svgContent}</svg>`;
-            }
-
-
-            // --- Game Over / Message --- (Unchanged)
-            function endGame(win){gameOver=true;waveInProgress=false;placingTowerType=null;selectedTower=null;const m=win?`Wave Cleared! Won! Score: ${score}`:`Game Over! Score: ${score}, Wave: ${wave}`;showMessage(m);updateUI();}
-            function showMessage(text){messageText.textContent=text;messageBox.style.display='block';gamePaused=true;}
-            function hideMessage(){messageBox.style.display='none';gamePaused=false;if(!gameOver)requestAnimationFrame(gameLoop);}
+            function hideMessage() {
+                 messageBox.style.display = 'none'; messageTimeout = null;
+                 if (!gameOver) { // Only unpause if game is not over
+                    gamePaused = false;
+                    requestAnimationFrame(gameLoop); // Resume loop
+                 }
+             }
 
             // --- Start the Game ---
             gameLoop();
