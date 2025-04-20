@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Tower Defense V5</title>
+    <title>Pixel Tower Defense V7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -20,7 +20,7 @@
             padding-top: 1rem; /* Add some space at the top */
         }
         canvas {
-            background-color: #333;
+            /* background-color: #333; */ /* Background now drawn in JS */
             display: block; /* Important for responsive scaling */
             border: 4px solid #555;
             border-radius: 8px;
@@ -94,17 +94,32 @@
             gap: 5px;
         }
 
-        .controls button:hover, .tower-button:hover, .target-button:hover { /* ... */ }
-        .controls button:active, .tower-button:active, .target-button:active { /* ... */ }
+        .controls button:hover, .tower-button:hover, .target-button:hover {
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+             transform: translateY(-1px);
+        }
+        .controls button:active, .tower-button:active, .target-button:active {
+             transform: translateY(1px);
+             border-bottom-width: 1px;
+             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
 
-        /* Specific Button Colors (Unchanged) */
+        /* Specific Button Colors */
         #startWaveBtn { background-color: #28a745; border-bottom-color: #1e7e34; } #startWaveBtn:hover { background-color: #218838; }
         #sellTowerBtn { background-color: #dc3545; border-bottom-color: #a71d2a; } #sellTowerBtn:hover { background-color: #c82333; }
         #upgradeTowerBtn { background-color: #ffc107; border-bottom-color: #ba8b00; color: #333;} #upgradeTowerBtn:hover { background-color: #e0a800; }
-        #basicTowerBtn { background-color: #17a2b8; border-bottom-color: #117a8b; } #basicTowerBtn:hover { background-color: #138496; }
-        #laserTowerBtn { background-color: #fd7e14; border-bottom-color: #c75e0a; } #laserTowerBtn:hover { background-color: #e66e0c; }
-        #slowTowerBtn { background-color: #6495ED; border-bottom-color: #4169E1; } #slowTowerBtn:hover { background-color: #4682B4; }
-        #splashTowerBtn { background-color: #800080; border-bottom-color: #4B0082; } #splashTowerBtn:hover { background-color: #6A0DAD; }
+        /* Tower Buttons */
+        #basicTowerBtn { background-color: #17a2b8; border-bottom-color: #117a8b; } /* Cyan */
+        #basicTowerBtn:hover { background-color: #138496; }
+        #laserTowerBtn { background-color: #fd7e14; border-bottom-color: #c75e0a; } /* Orange */
+        #laserTowerBtn:hover { background-color: #e66e0c; }
+        #slowTowerBtn { background-color: #6495ED; border-bottom-color: #4169E1; } /* Blue */
+        #slowTowerBtn:hover { background-color: #4682B4; }
+        #splashTowerBtn { background-color: #800080; border-bottom-color: #4B0082; } /* Purple */
+        #splashTowerBtn:hover { background-color: #6A0DAD; }
+        #poisonTowerBtn { background-color: #228B22; border-bottom-color: #006400; } /* Forest Green */
+        #poisonTowerBtn:hover { background-color: #556B2F; } /* Dark Olive Green */
+
 
         /* Targeting Buttons */
         .target-button { padding: 4px 6px; font-size: clamp(0.5em, 1.8vw, 0.7em); background-color: #444; border-bottom-color: #222; }
@@ -123,7 +138,7 @@
 </head>
 <body>
     <div class="game-container">
-        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V5</h1>
+        <h1 class="text-2xl md:text-3xl mb-3 md:mb-4 text-cyan-300 text-center">Pixel Tower Defense V7</h1>
 
         <div class="stats" id="stats">
             <span>Money: <span id="money">120</span></span>
@@ -140,6 +155,7 @@
                     <button id="laserTowerBtn" class="tower-button" data-type="laser">Laser</button>
                     <button id="slowTowerBtn" class="tower-button" data-type="slow">Slow</button>
                     <button id="splashTowerBtn" class="tower-button" data-type="splash">Splash</button>
+                    <button id="poisonTowerBtn" class="tower-button" data-type="poison">Poison</button>
                 </div>
             </div>
 
@@ -183,7 +199,7 @@
             const ctx = canvas.getContext('2d');
 
             // --- Game Configuration ---
-            const TILE_SIZE = 40; // Base size for calculations
+            const TILE_SIZE = 40;
             const BASE_CANVAS_WIDTH = 600;
             const BASE_CANVAS_HEIGHT = 400;
             const GRID_WIDTH = BASE_CANVAS_WIDTH / TILE_SIZE;
@@ -193,23 +209,34 @@
             const WAVE_START_DELAY = 300;
             const ENEMY_SPAWN_INTERVAL = 60;
             const SELL_PERCENTAGE = 0.7;
-            const INTEREST_RATE = 0.05; // 5% interest per wave clear
+            const INTEREST_RATE = 0.05;
+            const POISON_TICK_RATE = 30; // Apply poison damage every 30 frames (0.5 sec)
+            const PHYSICAL_ARMOR_REDUCTION = 0.5; // Physical damage reduced by 50% vs armor
 
             // --- Enemy Configuration ---
             const ENEMY_TYPES = {
-                'normal': { baseHealth: 30, speed: 1, color: '#28a745', sizeFactor: 1.0 },
-                'fast':   { baseHealth: 21, speed: 1.8, color: '#ffeb3b', sizeFactor: 0.9 } // ~70% health, 80% faster, yellow
+                'normal': { baseHealth: 30, speed: 1, color: '#28a745', shape: 'circle', sizeFactor: 1.0, armorType: null },
+                'fast':   { baseHealth: 21, speed: 1.8, color: '#ffeb3b', shape: 'rect', sizeFactor: 0.9, armorType: null }, // Yellow, rounded rect
+                'armored':{ baseHealth: 50, speed: 0.8, color: '#9E9E9E', shape: 'hexagon', sizeFactor: 1.1, armorType: 'physical' } // Grey, slower, tougher, armored
             };
-            const ENEMY_HEALTH_INCREMENT = 15; // Applied to baseHealth per wave
-            const FAST_ENEMY_CHANCE = 0.20; // 20% chance from wave 3+
+            const ENEMY_HEALTH_INCREMENT = 15;
+            const FAST_ENEMY_CHANCE = 0.20;
             const FAST_ENEMY_START_WAVE = 3;
+            const ARMORED_ENEMY_CHANCE = 0.15;
+            const ARMORED_ENEMY_START_WAVE = 5;
 
-            // --- Tower Configuration --- (Unchanged from V4)
-            const TOWER_TYPES = { /* ... V4 Config ... */
-                 'basic': { cost: 50, range: 100, damage: 12, fireRate: 50, color: '#17a2b8', shape: 'rect', maxLevel: 2, upgradeCosts: [75], upgradeStats: [{ damage: 18, range: 110 }] },
-                 'laser': { cost: 75, range: 90, damage: 7, fireRate: 25, color: '#fd7e14', shape: 'triangle', maxLevel: 2, upgradeCosts: [100], upgradeStats: [{ damage: 10, fireRate: 20 }] },
-                 'slow': { cost: 60, range: 80, damage: 0, fireRate: 30, color: '#6495ED', shape: 'circle', maxLevel: 2, slowFactor: 0.6, slowDuration: 120, upgradeCosts: [70], upgradeStats: [{ range: 95, slowFactor: 0.5 }] },
-                 'splash': { cost: 90, range: 90, damage: 8, fireRate: 60, color: '#800080', shape: 'circle', maxLevel: 2, splashRadius: 40, upgradeCosts: [120], upgradeStats: [{ damage: 12, splashRadius: 50 }] }
+
+            // --- Tower Configuration ---
+             const TOWER_TYPES = {
+                 'basic': { cost: 50, range: 100, damage: 12, fireRate: 50, color: '#17a2b8', shape: 'rect', projectile: 'bullet', maxLevel: 2, upgradeCosts: [75], upgradeStats: [{ damage: 18, range: 110 }] },
+                 'laser': { cost: 75, range: 90, damage: 7, fireRate: 25, color: '#fd7e14', shape: 'triangle', projectile: 'laser', maxLevel: 2, upgradeCosts: [100], upgradeStats: [{ damage: 10, fireRate: 20 }] },
+                 'slow': { cost: 60, range: 80, damage: 0, fireRate: 30, color: '#6495ED', shape: 'snowflake', projectile: null, maxLevel: 2, slowFactor: 0.6, slowDuration: 120, upgradeCosts: [70], upgradeStats: [{ range: 95, slowFactor: 0.5 }] },
+                 'splash': { cost: 90, range: 90, damage: 8, fireRate: 60, color: '#800080', shape: 'mortar', projectile: 'bomb', maxLevel: 2, splashRadius: 40, upgradeCosts: [120], upgradeStats: [{ damage: 12, splashRadius: 50 }] },
+                 'poison': { cost: 80, range: 110, damage: 2, fireRate: 55, color: '#228B22', shape: 'vial', projectile: 'poison_dart', maxLevel: 2,
+                             poisonDamage: 4, // Damage per tick
+                             poisonDuration: 180, // Frames (3 seconds)
+                             upgradeCosts: [100], upgradeStats: [{ poisonDamage: 6, poisonDuration: 240 }] // Lvl 2 stats
+                           }
              };
 
             // --- Game State ---
@@ -217,301 +244,361 @@
             let enemies = []; let towers = []; let projectiles = []; let effects = [];
             let grid = createGrid(); let path = [];
             let placingTowerType = null; let selectedTower = null;
-            let mouse = { x: 0, y: 0 }; // Raw mouse position over the element
-            let scaledMouse = { x: 0, y: 0 }; // Mouse position scaled to canvas internal resolution
+            let mouse = { x: 0, y: 0 }; let scaledMouse = { x: 0, y: 0 };
             let waveInProgress = false; let enemiesToSpawn = 0; let spawnTimer = 0;
             let frameCount = 0; let gameOver = false; let gamePaused = false;
-            let scaleX = 1, scaleY = 1; // Canvas scaling factors
+            let scaleX = 1, scaleY = 1;
 
-            // --- UI Elements --- (Unchanged from V4)
-            const moneyDisplay = document.getElementById('money'); const scoreDisplay = document.getElementById('score'); const livesDisplay = document.getElementById('lives'); const waveDisplay = document.getElementById('wave');
-            const startWaveBtn = document.getElementById('startWaveBtn'); const sellTowerBtn = document.getElementById('sellTowerBtn'); const upgradeTowerBtn = document.getElementById('upgradeTowerBtn');
-            const towerButtons = document.querySelectorAll('.tower-button'); const targetButtons = document.querySelectorAll('.target-button');
-            const towerActionsDiv = document.getElementById('towerActions'); const targetingControlsDiv = document.getElementById('targetingControls');
-            const messageBox = document.getElementById('messageBox'); const messageText = document.getElementById('messageText'); const messageBtn = document.getElementById('messageBtn');
+            // --- UI Elements --- (Unchanged) /* ... */
+            const moneyDisplay=document.getElementById('money');const scoreDisplay=document.getElementById('score');const livesDisplay=document.getElementById('lives');const waveDisplay=document.getElementById('wave');const startWaveBtn=document.getElementById('startWaveBtn');const sellTowerBtn=document.getElementById('sellTowerBtn');const upgradeTowerBtn=document.getElementById('upgradeTowerBtn');const towerButtons=document.querySelectorAll('.tower-button');const targetButtons=document.querySelectorAll('.target-button');const towerActionsDiv=document.getElementById('towerActions');const targetingControlsDiv=document.getElementById('targetingControls');const messageBox=document.getElementById('messageBox');const messageText=document.getElementById('messageText');const messageBtn=document.getElementById('messageBtn');
 
             // --- Path Definition ---
             const pathPoints = [ { x: 0, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 7 }, { x: 10, y: 7 }, { x: 10, y: 4 }, { x: 14, y: 4 } ];
             calculatePixelPath();
 
             // --- Initialization ---
-            updateCanvasScale(); // Initial scale calculation
-            updateUI();
-            setupEventListeners();
+            updateCanvasScale(); updateUI(); setupEventListeners();
 
-            // --- Game Loop --- (Unchanged from V4)
-            function gameLoop() { /* ... V4 Loop ... */
-                if (gameOver || gamePaused) { if (!gameOver) requestAnimationFrame(gameLoop); return; }
-                frameCount++; ctx.clearRect(0, 0, BASE_CANVAS_WIDTH, BASE_CANVAS_HEIGHT); // Use base resolution
-                drawGrid(); drawPath(); handleWaves(); handleEnemies(); handleTowers(); handleProjectiles(); handleEffects();
-                drawTowers(); drawEnemies(); drawProjectiles(); drawEffects();
-                if (placingTowerType) drawTowerPlacementPreview(); // Uses scaledMouse
-                requestAnimationFrame(gameLoop);
-             }
+            // --- Game Loop ---
+            function gameLoop() { /* ... V6 Loop ... */ if(gameOver||gamePaused){if(!gameOver)requestAnimationFrame(gameLoop);return}frameCount++;drawBackground();drawPath();drawGrid();handleWaves();handleEnemies();handleTowers();handleProjectiles();handleEffects();drawTowers();drawEnemies();drawProjectiles();drawEffects();if(placingTowerType)drawTowerPlacementPreview();requestAnimationFrame(gameLoop);}
 
-            // --- Grid and Path --- (Unchanged from V4)
-            function createGrid() { /* ... V4 Func ... */ const g=[];for(let y=0;y<GRID_HEIGHT;y++){g[y]=[];for(let x=0;x<GRID_WIDTH;x++)g[y][x]={type:'empty',tower:null}}return g; }
-            function calculatePixelPath() { /* ... V4 Func ... */
-                 path = []; if (pathPoints.length === 0) return;
-                 let totalDistance = 0; const waypoints = [];
-                 waypoints.push({ x: pathPoints[0].x * TILE_SIZE - TILE_SIZE, y: pathPoints[0].y * TILE_SIZE + TILE_SIZE / 2, dist: 0 });
-                 for (let i = 0; i < pathPoints.length; i++) {
-                     const point = pathPoints[i]; const x = point.x * TILE_SIZE + TILE_SIZE / 2; const y = point.y * TILE_SIZE + TILE_SIZE / 2;
-                     const prevWaypoint = waypoints[waypoints.length - 1]; const segmentDist = getDistance(prevWaypoint, {x, y}); totalDistance += segmentDist;
-                     waypoints.push({ x, y, dist: totalDistance });
-                     if (i > 0) { const prevPoint = pathPoints[i - 1]; if (point.x === prevPoint.x) { const sY = Math.min(point.y, prevPoint.y), eY = Math.max(point.y, prevPoint.y); for (let py = sY; py <= eY; py++) if (grid[py]?.[point.x]) grid[py][point.x].type = 'path'; } else { const sX = Math.min(point.x, prevPoint.x), eX = Math.max(point.x, prevPoint.x); for (let px = sX; px <= eX; px++) if (grid[point.y]?.[px]) grid[point.y][px].type = 'path'; } } else { if (grid[point.y]?.[point.x]) grid[point.y][point.x].type = 'path'; }
-                 }
-                 const lastGridPoint = pathPoints[pathPoints.length - 1]; const endX = (lastGridPoint.x + 1) * TILE_SIZE + TILE_SIZE; const endY = lastGridPoint.y * TILE_SIZE + TILE_SIZE / 2;
-                 const lastWaypoint = waypoints[waypoints.length-1]; totalDistance += getDistance(lastWaypoint, {x: endX, y: endY});
-                 waypoints.push({ x: endX, y: endY, dist: totalDistance }); path = waypoints;
-             }
-            function drawGrid() { /* ... V4 Func ... */ ctx.strokeStyle = '#383838'; ctx.lineWidth = 1; for (let y = 0; y < GRID_HEIGHT; y++) for (let x = 0; x < GRID_WIDTH; x++) ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE); }
-            function drawPath() { /* ... V4 Func ... */ ctx.strokeStyle = '#888'; ctx.lineWidth = TILE_SIZE * 0.8; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); if (path.length > 0) { ctx.moveTo(path[0].x, path[0].y); for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y); } ctx.stroke(); }
+             // --- Background, Grid and Path ---
+             function drawBackground() { /* ... V6 Func ... */ const cX=BASE_CANVAS_WIDTH/2,cY=BASE_CANVAS_HEIGHT/2;const oR=Math.sqrt(cX*cX+cY*cY);const g=ctx.createRadialGradient(cX,cY,0,cX,cY,oR);g.addColorStop(0,'#3a3a3a');g.addColorStop(1,'#2a2a2a');ctx.fillStyle=g;ctx.fillRect(0,0,BASE_CANVAS_WIDTH,BASE_CANVAS_HEIGHT);}
+             function createGrid() { /* ... V6 Func ... */ const g=[];for(let y=0;y<GRID_HEIGHT;y++){g[y]=[];for(let x=0;x<GRID_WIDTH;x++)g[y][x]={type:'empty',tower:null}}return g;}
+             function calculatePixelPath() { /* ... V6 Func ... */ path=[];if(pathPoints.length===0)return;let tD=0;const w=[];w.push({x:pathPoints[0].x*TILE_SIZE-TILE_SIZE,y:pathPoints[0].y*TILE_SIZE+TILE_SIZE/2,dist:0});for(let i=0;i<pathPoints.length;i++){const p=pathPoints[i];const x=p.x*TILE_SIZE+TILE_SIZE/2;const y=p.y*TILE_SIZE+TILE_SIZE/2;const pW=w[w.length-1];const sD=getDistance(pW,{x,y});tD+=sD;w.push({x,y,dist:tD});if(i>0){const pP=pathPoints[i-1];if(p.x===pP.x){const sY=Math.min(p.y,pP.y),eY=Math.max(p.y,pP.y);for(let py=sY;py<=eY;py++)if(grid[py]?.[p.x])grid[py][p.x].type='path'}else{const sX=Math.min(p.x,pP.x),eX=Math.max(p.x,pP.x);for(let px=sX;px<=eX;px++)if(grid[p.y]?.[px])grid[p.y][px].type='path'}}else{if(grid[p.y]?.[p.x])grid[p.y][p.x].type='path'}}const lGP=pathPoints[pathPoints.length-1];const eX=(lGP.x+1)*TILE_SIZE+TILE_SIZE;const eY=lGP.y*TILE_SIZE+TILE_SIZE/2;const lW=w[w.length-1];tD+=getDistance(lW,{x:eX,y:eY});w.push({x:eX,y:eY,dist:tD});path=w;}
+             function drawGrid() { /* ... V6 Func ... */ ctx.strokeStyle='rgba(85,85,85,0.3)';ctx.lineWidth=1;for(let y=0;y<GRID_HEIGHT;y++)for(let x=0;x<GRID_WIDTH;x++)ctx.strokeRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE);}
+             function drawPath() { /* ... V6 Func ... */ if(path.length<2)return;const pWO=TILE_SIZE*0.85;const pWI=TILE_SIZE*0.7;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#5a3a2a';ctx.lineWidth=pWO;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();ctx.strokeStyle='#a07050';ctx.lineWidth=pWI;ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)ctx.lineTo(path[i].x,path[i].y);ctx.stroke();}
 
              // --- Enemy Handling ---
-            function spawnEnemy() {
+            function spawnEnemy() { // Added Armored type
                 let enemyTypeKey = 'normal';
-                // Introduce fast enemies based on wave and chance
-                if (wave >= FAST_ENEMY_START_WAVE && Math.random() < FAST_ENEMY_CHANCE) {
+                let randomRoll = Math.random();
+
+                if (wave >= ARMORED_ENEMY_START_WAVE && randomRoll < ARMORED_ENEMY_CHANCE) {
+                    enemyTypeKey = 'armored';
+                } else if (wave >= FAST_ENEMY_START_WAVE && randomRoll < ARMORED_ENEMY_CHANCE + FAST_ENEMY_CHANCE) {
+                    // Spawn fast only if not armored and within fast chance range
                     enemyTypeKey = 'fast';
-                }
+                } // Else defaults to 'normal'
+
                 const enemyConfig = ENEMY_TYPES[enemyTypeKey];
                 const health = (enemyConfig.baseHealth + (wave - 1) * ENEMY_HEALTH_INCREMENT);
 
                 enemies.push({
-                    x: path[0].x, y: path[0].y,
-                    health: health, maxHealth: health,
+                    x: path[0].x, y: path[0].y, health: health, maxHealth: health,
                     speed: enemyConfig.speed, pathIndex: 1,
-                    size: TILE_SIZE * 0.4 * enemyConfig.sizeFactor, // Use sizeFactor
-                    color: enemyConfig.color, // Store color
-                    type: enemyTypeKey, // Store type
+                    size: TILE_SIZE * 0.4 * enemyConfig.sizeFactor,
+                    color: enemyConfig.color, type: enemyTypeKey, shape: enemyConfig.shape,
+                    armorType: enemyConfig.armorType, // Store armor type
                     speedMultiplier: 1, slowTimer: 0,
+                    poisonEffects: [], // Array to store active poison effects {damage, duration, timer, tickTimer}
                     distanceTraveled: 0
                 });
             }
-            function handleEnemies() { /* ... V4 Func, uses enemy.speed ... */
+            function handleEnemies() { // Added Poison handling
                  for (let i = enemies.length - 1; i >= 0; i--) {
                      const enemy = enemies[i];
+
+                     // Handle Slow
                      if (enemy.slowTimer > 0) { enemy.slowTimer--; if (enemy.slowTimer <= 0) enemy.speedMultiplier = 1; }
-                     const effectiveSpeed = enemy.speed * enemy.speedMultiplier; // Use base speed from enemy object
+
+                     // Handle Poison
+                     let tookPoisonDamageThisFrame = false;
+                     for (let j = enemy.poisonEffects.length - 1; j >= 0; j--) {
+                         const poison = enemy.poisonEffects[j];
+                         poison.timer--;
+                         poison.tickTimer--;
+
+                         if (poison.tickTimer <= 0 && poison.timer > 0) {
+                             enemy.health -= poison.damage;
+                             tookPoisonDamageThisFrame = true;
+                             poison.tickTimer = POISON_TICK_RATE; // Reset tick timer
+                             // console.log(`Enemy took ${poison.damage} poison damage`);
+                         }
+
+                         if (poison.timer <= 0) {
+                             enemy.poisonEffects.splice(j, 1); // Remove expired poison
+                         }
+                     }
+                     // Prevent dying mid-frame from poison before moving/other checks
+                     if (enemy.health <= 0 && tookPoisonDamageThisFrame) {
+                         // Handle death immediately after poison tick if health drops below zero
+                         money += 5 + Math.floor(wave / 5); score += 10; updateUI(); enemies.splice(i, 1); continue;
+                     }
+
+
+                     // Movement (Unchanged from V6)
+                     const effectiveSpeed = enemy.speed * enemy.speedMultiplier;
                      if (enemy.pathIndex < path.length) {
                          const targetPoint = path[enemy.pathIndex]; const dx = targetPoint.x - enemy.x; const dy = targetPoint.y - enemy.y;
-                         const distanceToWaypointSq = dx*dx + dy*dy; // Use squared distance
-                         let moveDistance = effectiveSpeed;
-                         if (distanceToWaypointSq < moveDistance * moveDistance) { // Compare squares
-                             moveDistance = Math.sqrt(distanceToWaypointSq); // Only sqrt when needed
-                             enemy.x = targetPoint.x; enemy.y = targetPoint.y; enemy.pathIndex++;
-                         } else {
-                             const distanceToWaypoint = Math.sqrt(distanceToWaypointSq); // Need sqrt for direction
-                             enemy.x += (dx / distanceToWaypoint) * moveDistance; enemy.y += (dy / distanceToWaypoint) * moveDistance;
-                         }
+                         const distanceToWaypointSq = dx*dx + dy*dy; let moveDistance = effectiveSpeed;
+                         if (distanceToWaypointSq < moveDistance * moveDistance) { moveDistance = Math.sqrt(distanceToWaypointSq); enemy.x = targetPoint.x; enemy.y = targetPoint.y; enemy.pathIndex++; }
+                         else { const dW = Math.sqrt(distanceToWaypointSq); enemy.x += (dx / dW) * moveDistance; enemy.y += (dy / dW) * moveDistance; }
                          enemy.distanceTraveled += moveDistance;
                      } else { lives--; updateUI(); enemies.splice(i, 1); if (lives <= 0) endGame(false); continue; }
+
+                     // Final health check for death from other sources
                      if (enemy.health <= 0) { money += 5 + Math.floor(wave / 5); score += 10; updateUI(); enemies.splice(i, 1); }
                  }
              }
-            function drawEnemies() {
+            function drawEnemies() { // Added Armored shape and Poison indicator
                 enemies.forEach(enemy => {
-                    ctx.fillStyle = enemy.color; // Use enemy's stored color
-                    ctx.beginPath(); ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = enemy.speedMultiplier < 1 ? '#007bff' : '#1e7e34'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.fillStyle = enemy.color;
+                    // Determine border color: Blue if slowed, Purple if poisoned (and not slowed), Dark Green otherwise
+                    let borderColor = '#1e7e34'; // Default
+                    if (enemy.poisonEffects.length > 0) borderColor = '#800080'; // Purple if poisoned
+                    if (enemy.speedMultiplier < 1) borderColor = '#007bff'; // Blue if slowed (overrides poison color)
+
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+
+                    if (enemy.shape === 'rect') { // Fast enemy rounded rect
+                        const cr = enemy.size * 0.3; const w = enemy.size; const h = enemy.size * 1.2; // Make slightly taller
+                        ctx.moveTo(enemy.x - w + cr, enemy.y - h); ctx.lineTo(enemy.x + w - cr, enemy.y - h); ctx.arcTo(enemy.x+w, enemy.y-h, enemy.x+w, enemy.y-h+cr, cr);
+                        ctx.lineTo(enemy.x+w, enemy.y+h-cr); ctx.arcTo(enemy.x+w, enemy.y+h, enemy.x+w-cr, enemy.y+h, cr);
+                        ctx.lineTo(enemy.x-w+cr, enemy.y+h); ctx.arcTo(enemy.x-w, enemy.y+h, enemy.x-w, enemy.y+h-cr, cr);
+                        ctx.lineTo(enemy.x-w, enemy.y-h+cr); ctx.arcTo(enemy.x-w, enemy.y-h, enemy.x-w+cr, enemy.y-h, cr);
+                        ctx.closePath();
+                    } else if (enemy.shape === 'hexagon') { // Armored enemy
+                        const size = enemy.size * 1.2; // Slightly larger hexagon
+                         ctx.moveTo(enemy.x + size, enemy.y);
+                         for (let i = 1; i <= 6; i++) {
+                             ctx.lineTo(enemy.x + size * Math.cos(i * 2 * Math.PI / 6), enemy.y + size * Math.sin(i * 2 * Math.PI / 6));
+                         }
+                         ctx.closePath();
+                    }
+                    else { // Default circle
+                        ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+                    }
+                    ctx.fill();
+                    ctx.stroke();
+
                     // Health bar (unchanged)
-                    const healthBarWidth = enemy.size * 2; const healthBarHeight = 5; const healthPercentage = enemy.health / enemy.maxHealth;
-                    ctx.fillStyle = '#555'; ctx.fillRect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size - healthBarHeight - 3, healthBarWidth, healthBarHeight);
-                    ctx.fillStyle = '#dc3545'; ctx.fillRect(enemy.x - healthBarWidth / 2, enemy.y - enemy.size - healthBarHeight - 3, healthBarWidth * healthPercentage, healthBarHeight);
+                    const hBW = enemy.size * 2; const hBH = 5; const hP = enemy.health / enemy.maxHealth;
+                    ctx.fillStyle = '#555'; ctx.fillRect(enemy.x - hBW / 2, enemy.y - enemy.size - hBH - 3, hBW, hBH);
+                    ctx.fillStyle = '#dc3545'; ctx.fillRect(enemy.x - hBW / 2, enemy.y - enemy.size - hBH - 3, hBW * hP, hBH);
                 });
             }
 
             // --- Tower Handling ---
-             function canPlaceTower(gridX, gridY, towerType) { /* ... V4 Func ... */ const c=TOWER_TYPES[towerType];if(!c||!grid[gridY]?.[gridX]||grid[gridY][gridX].type!=='empty'||money<c.cost)return false;return true;}
-             function placeTower(gridX, gridY) { /* ... V4 Func ... */
+             function canPlaceTower(gridX, gridY, towerType) { /* ... V6 Func ... */ const c=TOWER_TYPES[towerType];if(!c||!grid[gridY]?.[gridX]||grid[gridY][gridX].type!=='empty'||money<c.cost)return false;return true;}
+             function placeTower(gridX, gridY) { // Added poison stats
                  if (!placingTowerType) return; const config = TOWER_TYPES[placingTowerType]; if (!config || !canPlaceTower(gridX, gridY, placingTowerType)) return;
-                 money -= config.cost; const towerX = gridX * TILE_SIZE + TILE_SIZE / 2; const towerY = gridY * TILE_SIZE + TILE_SIZE / 2;
-                 const newTower = { x: towerX, y: towerY, gridX: gridX, gridY: gridY, range: config.range, damage: config.damage, fireRate: config.fireRate, slowFactor: config.slowFactor, slowDuration: config.slowDuration, splashRadius: config.splashRadius, fireCooldown: 0, target: null, type: placingTowerType, level: 1, maxLevel: config.maxLevel, totalCost: config.cost, targetingPriority: 'first' };
+                 money -= config.cost; const tX = gridX * TILE_SIZE + TILE_SIZE / 2; const tY = gridY * TILE_SIZE + TILE_SIZE / 2;
+                 const newTower = {
+                     x: tX, y: tY, gridX: gridX, gridY: gridY, range: config.range, damage: config.damage, fireRate: config.fireRate,
+                     slowFactor: config.slowFactor, slowDuration: config.slowDuration, splashRadius: config.splashRadius,
+                     poisonDamage: config.poisonDamage, poisonDuration: config.poisonDuration, // Add poison stats
+                     fireCooldown: 0, target: null, type: placingTowerType, level: 1, maxLevel: config.maxLevel, totalCost: config.cost, targetingPriority: 'first'
+                 };
                  towers.push(newTower); grid[gridY][gridX].type = 'tower'; grid[gridY][gridX].tower = newTower; deselectTowerPurchase(); updateUI();
               }
-            function handleTowers() { /* ... V4 Func ... */ towers.forEach(t => { if (t.fireCooldown > 0) t.fireCooldown--; const rangeSq = t.range * t.range; if (!t.target || t.target.health <= 0 || getDistanceSq(t, t.target) > rangeSq) t.target = findTargetBasedOnPriority(t); if (t.fireCooldown <= 0 && t.target) { if (t.type === 'slow') { applySlowEffect(t); t.fireCooldown = t.fireRate; } else if (t.damage > 0) { fireProjectile(t, t.target); t.fireCooldown = t.fireRate; } } }); }
-            function applySlowEffect(tower) { /* ... V4 Func ... */ const rangeSq = tower.range * tower.range; enemies.forEach(e => { if (getDistanceSq(tower, e) <= rangeSq) { e.speedMultiplier = tower.slowFactor; e.slowTimer = tower.slowDuration; } }); }
+             function handleTowers() { /* ... V6 Func ... */ towers.forEach(t=>{if(t.fireCooldown>0)t.fireCooldown--;const rSq=t.range*t.range;if(!t.target||t.target.health<=0||getDistanceSq(t,t.target)>rSq)t.target=findTargetBasedOnPriority(t);if(t.fireCooldown<=0&&t.target){if(t.type==='slow'){applySlowEffect(t);t.fireCooldown=t.fireRate}else if(t.type==='poison'||t.damage>0){fireProjectile(t,t.target);t.fireCooldown=t.fireRate}}});} // Poison tower also fires projectiles
+             function applySlowEffect(tower) { /* ... V6 Func ... */ const rSq=tower.range*tower.range;enemies.forEach(e=>{if(getDistanceSq(tower,e)<=rSq){e.speedMultiplier=tower.slowFactor;e.slowTimer=tower.slowDuration}});}
+             function findTargetBasedOnPriority(tower) { /* ... V6 Func ... */ const rSq=tower.range*tower.range;let pT=enemies.filter(e=>getDistanceSq(tower,e)<=rSq);if(pT.length===0)return null;switch(tower.targetingPriority){case'first':pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break;case'last':pT.sort((a,b)=>a.distanceTraveled-b.distanceTraveled);break;case'strongest':pT.sort((a,b)=>b.health-a.health);break;case'weakest':pT.sort((a,b)=>a.health-b.health);break;default:pT.sort((a,b)=>b.distanceTraveled-a.distanceTraveled);break}return pT[0];}
 
-            // --- Targeting Logic ---
-            function findTargetBasedOnPriority(tower) {
-                const rangeSq = tower.range * tower.range; // Calculate squared range once
-                let potentialTargets = enemies.filter(enemy => getDistanceSq(tower, enemy) <= rangeSq); // Use squared distance
-                if (potentialTargets.length === 0) return null;
-
-                switch (tower.targetingPriority) {
-                    case 'first': potentialTargets.sort((a, b) => b.distanceTraveled - a.distanceTraveled); break;
-                    case 'last': potentialTargets.sort((a, b) => a.distanceTraveled - b.distanceTraveled); break;
-                    case 'strongest': potentialTargets.sort((a, b) => b.health - a.health); break;
-                    case 'weakest': potentialTargets.sort((a, b) => a.health - b.health); break;
-                    default: potentialTargets.sort((a, b) => b.distanceTraveled - a.distanceTraveled); break;
-                }
-                return potentialTargets[0];
-            }
-
-            function drawTowers() { /* ... V4 Func ... */
+            function drawTowers() { // Enhanced drawing + Poison Tower
                  towers.forEach(tower => {
-                     const config = TOWER_TYPES[tower.type]; ctx.fillStyle = config.color; ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.beginPath();
-                     const towerSize = TILE_SIZE * 0.3 + (tower.level - 1) * 2;
-                     if (config.shape === 'rect') { ctx.rect(tower.x - towerSize, tower.y - towerSize, towerSize * 2, towerSize * 2); }
-                     else if (config.shape === 'triangle') { const tS = towerSize * 1.3; ctx.moveTo(tower.x, tower.y - tS * 0.8); ctx.lineTo(tower.x - tS, tower.y + tS * 0.4); ctx.lineTo(tower.x + tS, tower.y + tS * 0.4); ctx.closePath(); }
-                     else if (tower.type === 'splash') { ctx.arc(tower.x, tower.y, towerSize, 0, Math.PI * 2); ctx.moveTo(tower.x + towerSize * 0.6, tower.y); ctx.arc(tower.x, tower.y, towerSize * 0.6, 0, Math.PI * 2); }
-                     else { ctx.arc(tower.x, tower.y, towerSize, 0, Math.PI * 2); } ctx.fill(); ctx.stroke();
-                     if (selectedTower === tower) { const rangeSq = tower.range*tower.range; ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2); ctx.stroke(); } // Range circle unchanged
-                     if (tower.level > 1) { ctx.fillStyle = 'yellow'; ctx.font = `${TILE_SIZE * 0.4}px 'Press Start 2P'`; const sS = 4, sSp = 6; const tW = (tower.level - 1) * sSp; const sX = tower.x - tW / 2 + sS / 2; for (let i = 1; i < tower.level; i++) { const starX = sX + (i - 1) * sSp; const starY = tower.y - towerSize - 8; ctx.fillText('*', starX - sS / 2, starY + sS / 2); } }
-                 });
+                    const config = TOWER_TYPES[tower.type];
+                    const towerSize = TILE_SIZE * 0.3 + (tower.level - 1) * 2;
+                    const x = tower.x; const y = tower.y;
+
+                    ctx.save(); ctx.translate(x, y);
+
+                    // Pulsing effect for slow tower base
+                    let pulseFactor = 1.0;
+                    if (tower.type === 'slow') {
+                        pulseFactor = 1.0 + Math.sin(frameCount * 0.05) * 0.05; // Gentle pulse
+                    }
+
+                    ctx.fillStyle = config.color; ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
+                    ctx.beginPath();
+
+                    // Draw specific shapes
+                    if (config.shape === 'rect') { // Basic
+                        const bS = towerSize * 1.8 * pulseFactor; ctx.rect(-bS/2, -bS/2, bS, bS); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle='#555'; ctx.strokeStyle='#222'; ctx.beginPath(); ctx.rect(-bS*0.15, -bS*0.6, bS*0.3, bS*0.4); ctx.fill(); ctx.stroke();
+                    } else if (config.shape === 'triangle') { // Laser
+                        const tS = towerSize * 1.4 * pulseFactor; ctx.moveTo(0,-tS*0.8); ctx.lineTo(-tS,tS*0.4); ctx.lineTo(tS,tS*0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+                        // Pulsing Core
+                        const corePulse = 1.0 + Math.sin(frameCount * 0.1) * 0.1;
+                        ctx.fillStyle = `rgba(255, 255, 255, ${0.8 + Math.sin(frameCount * 0.1) * 0.2})`; ctx.beginPath(); ctx.arc(0,0,tS*0.2*corePulse,0,Math.PI*2); ctx.fill();
+                    } else if (config.shape === 'snowflake') { // Slow
+                        const arms=6, angle=Math.PI*2/arms; const oR=towerSize*1.5*pulseFactor, iR=towerSize*0.7*pulseFactor; ctx.moveTo(0,-oR);
+                        for(let i=0;i<arms;i++){ctx.rotate(angle/2);ctx.lineTo(0,-iR);ctx.rotate(angle/2);ctx.lineTo(0,-oR);} ctx.closePath(); ctx.fill(); ctx.stroke();
+                    } else if (config.shape === 'mortar') { // Splash
+                         const mS = towerSize * 1.6 * pulseFactor; ctx.arc(0, 0, mS, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                         ctx.fillStyle='#444'; ctx.beginPath(); ctx.arc(0,0,mS*0.5,0,Math.PI*2); ctx.fill();
+                    } else if (config.shape === 'vial') { // Poison
+                         const vS = towerSize * 1.8 * pulseFactor;
+                         // Simple vial shape
+                         ctx.rect(-vS*0.4, -vS*0.5, vS*0.8, vS); // Body
+                         ctx.rect(-vS*0.2, -vS*0.7, vS*0.4, vS*0.2); // Neck
+                         ctx.fill(); ctx.stroke();
+                         // Liquid inside
+                         ctx.fillStyle = 'rgba(0, 255, 0, 0.6)'; // Semi-transparent green
+                         ctx.beginPath(); ctx.rect(-vS*0.35, -vS*0.4, vS*0.7, vS*0.8); ctx.fill();
+                    }
+                    else { ctx.arc(0, 0, towerSize*pulseFactor, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } // Default
+
+                    ctx.restore();
+
+                    // Range Circle and Stars (Unchanged)
+                    if (selectedTower === tower) { ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, tower.range, 0, Math.PI * 2); ctx.stroke(); }
+                    if (tower.level > 1) { ctx.fillStyle = 'yellow'; ctx.font = `${TILE_SIZE * 0.5}px 'Press Start 2P'`; const sS = 5, sSp = 7; const tW = (tower.level - 1) * sSp; const sX = x - tW / 2 + sS / 2; for (let i = 1; i < tower.level; i++) { const starX = sX + (i - 1) * sSp; const starY = y - towerSize - 10; ctx.fillText('*', starX - sS / 2, starY + sS / 2); } }
+                });
              }
-            function drawTowerPlacementPreview() { // Uses scaledMouse
-                 const gridX = Math.floor(scaledMouse.x / TILE_SIZE); const gridY = Math.floor(scaledMouse.y / TILE_SIZE); // Use scaled mouse coords
+            function drawTowerPlacementPreview() { // Added Poison preview
+                 const gridX = Math.floor(scaledMouse.x / TILE_SIZE); const gridY = Math.floor(scaledMouse.y / TILE_SIZE);
                  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT || !placingTowerType) return;
                  const previewX = gridX * TILE_SIZE + TILE_SIZE / 2; const previewY = gridY * TILE_SIZE + TILE_SIZE / 2;
                  const config = TOWER_TYPES[placingTowerType]; if (!config) return;
                  let canPlace = canPlaceTower(gridX, gridY, placingTowerType);
-                 ctx.globalAlpha = 0.5; ctx.fillStyle = canPlace ? config.color : 'red'; ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.beginPath();
-                 const previewSize = TILE_SIZE * 0.3;
-                 if (config.shape === 'rect') { ctx.rect(previewX - previewSize, previewY - previewSize, previewSize * 2, previewSize * 2); }
-                 else if (config.shape === 'triangle') { const tS=previewSize*1.3; ctx.moveTo(previewX,previewY-tS*0.8); ctx.lineTo(previewX-tS,previewY+tS*0.4); ctx.lineTo(previewX+tS,previewY+tS*0.4); ctx.closePath(); }
-                 else if (placingTowerType === 'splash') { ctx.arc(previewX, previewY, previewSize, 0, Math.PI * 2); ctx.moveTo(previewX+previewSize*0.6,previewY); ctx.arc(previewX, previewY, previewSize*0.6, 0, Math.PI * 2); }
-                 else { ctx.arc(previewX, previewY, previewSize, 0, Math.PI * 2); } ctx.fill(); ctx.stroke();
-                 ctx.strokeStyle = canPlace ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 0, 0, 0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(previewX, previewY, config.range, 0, Math.PI * 2); ctx.stroke();
+
+                 ctx.save(); ctx.translate(previewX, previewY); ctx.globalAlpha = 0.5;
+                 ctx.fillStyle = canPlace ? config.color : 'red'; ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.beginPath();
+                 const pS = TILE_SIZE * 0.3; // Base preview size
+
+                 if (config.shape === 'rect') { const bS=pS*1.8; ctx.rect(-bS/2,-bS/2,bS,bS); ctx.fill(); ctx.stroke(); ctx.fillStyle='#555'; ctx.beginPath(); ctx.rect(-bS*0.15,-bS*0.6,bS*0.3,bS*0.4); }
+                 else if (config.shape === 'triangle') { const tS=pS*1.4; ctx.moveTo(0,-tS*0.8); ctx.lineTo(-tS,tS*0.4); ctx.lineTo(tS,tS*0.4); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(0,0,tS*0.2,0,Math.PI*2); }
+                 else if (config.shape === 'snowflake') { const a=6, ang=Math.PI*2/a; const oR=pS*1.5, iR=pS*0.7; ctx.moveTo(0,-oR); for(let i=0;i<a;i++){ctx.rotate(ang/2);ctx.lineTo(0,-iR);ctx.rotate(ang/2);ctx.lineTo(0,-oR);} ctx.closePath(); }
+                 else if (config.shape === 'mortar') { const mS=pS*1.6; ctx.arc(0,0,mS,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.fillStyle='#444'; ctx.beginPath(); ctx.arc(0,0,mS*0.5,0,Math.PI*2); }
+                 else if (config.shape === 'vial') { const vS=pS*1.8; ctx.rect(-vS*0.4,-vS*0.5,vS*0.8,vS); ctx.rect(-vS*0.2,-vS*0.7,vS*0.4,vS*0.2); ctx.fill(); ctx.stroke(); ctx.fillStyle='rgba(0,255,0,0.6)'; ctx.beginPath(); ctx.rect(-vS*0.35,-vS*0.4,vS*0.7,vS*0.8); }
+                 else { ctx.arc(0, 0, pS, 0, Math.PI * 2); } // Default circle
+
+                 ctx.fill(); ctx.stroke(); ctx.restore();
+
+                 // Range preview (Unchanged)
+                 ctx.globalAlpha = 0.5; ctx.strokeStyle = canPlace ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 0, 0, 0.5)';
+                 ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(previewX, previewY, config.range, 0, Math.PI * 2); ctx.stroke();
                  ctx.globalAlpha = 1.0;
              }
-            function upgradeSelectedTower() { /* ... V4 Func ... */ if(!selectedTower||selectedTower.level>=selectedTower.maxLevel)return;const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI>=tC.upgradeCosts.length){console.error("...");return}const cost=tC.upgradeCosts[uI];if(money>=cost){money-=cost;selectedTower.level++;selectedTower.totalCost+=cost;const nS=tC.upgradeStats[uI];for(const s in nS)if(selectedTower.hasOwnProperty(s))selectedTower[s]=nS[s];console.log(`Upgraded`);updateUI()}else console.log("...");}
-            function sellSelectedTower() { /* ... V4 Func ... */ if(!selectedTower)return;const r=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);money+=r;const i=towers.indexOf(selectedTower);if(i>-1)towers.splice(i,1);const gX=selectedTower.gridX,gY=selectedTower.gridY;if(grid[gY]?.[gX]){grid[gY][gX].type='empty';grid[gY][gX].tower=null}selectedTower=null;updateUI();}
+            function upgradeSelectedTower() { /* ... V6 Func ... */ if(!selectedTower||selectedTower.level>=selectedTower.maxLevel)return;const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI>=tC.upgradeCosts.length){console.error("...");return}const cost=tC.upgradeCosts[uI];if(money>=cost){money-=cost;selectedTower.level++;selectedTower.totalCost+=cost;const nS=tC.upgradeStats[uI];for(const s in nS)if(selectedTower.hasOwnProperty(s))selectedTower[s]=nS[s];console.log(`Upgraded`);updateUI()}else console.log("...");}
+            function sellSelectedTower() { /* ... V6 Func ... */ if(!selectedTower)return;const r=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);money+=r;const i=towers.indexOf(selectedTower);if(i>-1)towers.splice(i,1);const gX=selectedTower.gridX,gY=selectedTower.gridY;if(grid[gY]?.[gX]){grid[gY][gX].type='empty';grid[gY][gX].tower=null}selectedTower=null;updateUI();}
 
             // --- Projectile Handling ---
-            function fireProjectile(tower, target) { /* ... V4 Func ... */ projectiles.push({ x: tower.x, y: tower.y, damage: tower.damage, target: target, speed: 6, size: 4, color: TOWER_TYPES[tower.type]?.color||'yellow', type: tower.type, splashRadius: tower.splashRadius }); }
-            function handleProjectiles() { // Uses squared distances
+            function fireProjectile(tower, target) { // Added poison stats to projectile
+                 const config = TOWER_TYPES[tower.type];
+                 projectiles.push({
+                     x: tower.x, y: tower.y, damage: tower.damage, target: target, speed: 6, size: 4,
+                     color: config.color || 'yellow', type: tower.type, projectileType: config.projectile,
+                     splashRadius: tower.splashRadius,
+                     // Add poison stats if applicable
+                     poisonDamage: tower.poisonDamage, poisonDuration: tower.poisonDuration
+                 });
+             }
+            function handleProjectiles() { // Added Armor check and Poison application
                 for (let i = projectiles.length - 1; i >= 0; i--) {
                     const p = projectiles[i];
                     if (!p.target || p.target.health <= 0) { projectiles.splice(i, 1); continue; }
                     const dx = p.target.x - p.x; const dy = p.target.y - p.y;
-                    const distanceSq = dx*dx + dy*dy; // Squared distance
-                    const speedSq = p.speed * p.speed;
+                    const distanceSq = dx*dx + dy*dy; const speedSq = p.speed * p.speed;
 
-                    if (distanceSq < speedSq) { // Hit target
+                    if (distanceSq < speedSq * 1.5) { // Hit target
+                        let actualDamage = p.damage;
+                        const enemy = p.target; // Convenience reference
+
+                        // Check armor reduction for relevant projectile types
+                        if (enemy.armorType === 'physical' && (p.projectileType === 'bullet' || p.projectileType === 'laser')) {
+                            actualDamage *= (1 - PHYSICAL_ARMOR_REDUCTION);
+                        }
+
+                        // Apply splash damage (also considers armor)
                         if (p.type === 'splash') {
                             const splashRadiusSq = p.splashRadius * p.splashRadius;
-                            enemies.forEach(enemy => {
-                                if (getDistanceSq(p.target, enemy) <= splashRadiusSq) { enemy.health -= p.damage; } // Compare squares
+                            enemies.forEach(splashTarget => {
+                                if (getDistanceSq(enemy, splashTarget) <= splashRadiusSq) {
+                                    let splashDamage = p.damage; // Base splash damage
+                                    // Apply armor reduction to splash damage too
+                                     if (splashTarget.armorType === 'physical' && (p.projectileType === 'bullet' || p.projectileType === 'laser' || p.projectileType === 'bomb')) { // Assume bomb is physical splash
+                                        splashDamage *= (1 - PHYSICAL_ARMOR_REDUCTION);
+                                     }
+                                    splashTarget.health -= splashDamage;
+                                }
                             });
-                             addEffect(p.target.x, p.target.y, p.splashRadius, p.color || TOWER_TYPES['splash'].color);
-                        } else { p.target.health -= p.damage; }
-                        projectiles.splice(i, 1);
+                             addEffect(enemy.x, enemy.y, p.splashRadius, '#FFA500', 'explosion');
+                        } else {
+                            // Apply direct damage (already potentially reduced by armor)
+                            enemy.health -= actualDamage;
+                        }
+
+                        // Apply poison if it's a poison tower projectile
+                        if (p.type === 'poison' && p.poisonDamage > 0) {
+                            // Check if enemy already has poison from this source type? No, just refresh/add.
+                            enemy.poisonEffects.push({
+                                damage: p.poisonDamage,
+                                duration: p.poisonDuration,
+                                timer: p.poisonDuration, // Start timer
+                                tickTimer: POISON_TICK_RATE // Timer for next tick
+                            });
+                        }
+
+                        projectiles.splice(i, 1); // Remove projectile
                     } else {
-                        const distance = Math.sqrt(distanceSq); // Need sqrt for direction
+                        const distance = Math.sqrt(distanceSq);
                         p.x += (dx / distance) * p.speed; p.y += (dy / distance) * p.speed;
                     }
                 }
             }
-            function drawProjectiles() { /* ... V4 Func ... */ projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }); }
+            function drawProjectiles() { // Added Poison Dart
+                 projectiles.forEach(p => {
+                     ctx.fillStyle = p.color; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1; ctx.beginPath();
 
-             // --- Visual Effects Handling --- (Unchanged from V4)
-             function addEffect(x, y, radius, color) { /* ... V4 Func ... */ effects.push({ x, y, maxRadius: radius, currentRadius: 0, duration: 20, timer: 20, color: color || 'rgba(255, 255, 0, 0.5)' }); }
-             function handleEffects() { /* ... V4 Func ... */ for (let i = effects.length - 1; i >= 0; i--) { const e = effects[i]; e.timer--; e.currentRadius = e.maxRadius * (1 - (e.timer / e.duration)); if (e.timer <= 0) effects.splice(i, 1); } }
-             function drawEffects() { /* ... V4 Func ... */ effects.forEach(e => { ctx.beginPath(); ctx.arc(e.x, e.y, e.currentRadius, 0, Math.PI * 2); ctx.strokeStyle = e.color; ctx.lineWidth = 2; ctx.globalAlpha = e.timer / e.duration; ctx.stroke(); ctx.globalAlpha = 1.0; }); }
+                     if (p.projectileType === 'laser') { const l=10, t=2; ctx.rect(p.x-t/2, p.y-l/2, t, l); }
+                     else if (p.projectileType === 'bomb') { ctx.fillStyle='#444'; ctx.arc(p.x, p.y, p.size*1.2, 0, Math.PI*2); }
+                     else if (p.projectileType === 'poison_dart') {
+                         const dartLength = 8; const dartWidth = 3;
+                         // Simple dart shape - triangle head, thin body
+                         ctx.moveTo(p.x, p.y - dartLength * 0.6); // Tip
+                         ctx.lineTo(p.x - dartWidth, p.y);
+                         ctx.lineTo(p.x + dartWidth, p.y);
+                         ctx.closePath(); // Head
+                         ctx.moveTo(p.x, p.y); // Body start
+                         ctx.lineTo(p.x, p.y + dartLength * 0.4); // Body end
+                         ctx.lineWidth = 1; // Make body thin
+                         ctx.stroke(); // Stroke body line
+                         ctx.fill(); // Fill head
+                         ctx.lineWidth = 1; // Reset lineWidth? No, keep thin for stroke below
+                     }
+                     else { ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); } // Default bullet
 
-            // --- Wave Management ---
-            function startWave() { /* ... V4 Func ... */ if (waveInProgress || gameOver) return; wave++; enemiesToSpawn = 8 + wave * 3; spawnTimer = ENEMY_SPAWN_INTERVAL; waveInProgress = true; deselectPlacedTower(); updateUI(); }
-            function handleWaves() { // Added Interest
-                if (!waveInProgress) {
-                     if (wave === 0 && frameCount > WAVE_START_DELAY && !gameOver) startWave();
-                    return;
-                }
-                if (enemiesToSpawn > 0 && spawnTimer <= 0) { spawnEnemy(); enemiesToSpawn--; spawnTimer = ENEMY_SPAWN_INTERVAL; }
-                spawnTimer--;
-
-                // Check if wave is over
-                if (enemiesToSpawn <= 0 && enemies.length === 0) {
-                    waveInProgress = false;
-                    // End-of-wave bonus + Interest
-                    let bonus = 50 + wave * 10;
-                    let interest = Math.floor(money * INTEREST_RATE);
-                    money += bonus + interest;
-                    console.log(`Wave ${wave} cleared! Bonus: ${bonus}$, Interest: ${interest}$`); // Log interest
-                    updateUI();
-                }
-            }
-
-            // --- UI and Interaction ---
-            function updateUI() { /* ... V4 Func ... */
-                 moneyDisplay.textContent = money; scoreDisplay.textContent = score; livesDisplay.textContent = lives; waveDisplay.textContent = wave;
-                 towerButtons.forEach(btn => { const t = btn.dataset.type; const c = TOWER_TYPES[t]; if (!c) return; const cost = c.cost; const d = money < cost || gameOver; btn.disabled = d; btn.classList.toggle('disabled', d); btn.classList.toggle('selected', placingTowerType === t); btn.textContent = `${t.charAt(0).toUpperCase() + t.slice(1)} (${cost}$)`; });
-                 startWaveBtn.disabled = waveInProgress || gameOver; startWaveBtn.classList.toggle('disabled', waveInProgress || gameOver);
-                 let canSell = false, canUpgrade = false, sellAmount = 0, upgradeCost = 0, currentPriority = null;
-                 if (selectedTower && !gameOver) { canSell = true; sellAmount = Math.floor(selectedTower.totalCost * SELL_PERCENTAGE); currentPriority = selectedTower.targetingPriority; if (selectedTower.level < selectedTower.maxLevel) { const tC = TOWER_TYPES[selectedTower.type]; const uI = selectedTower.level - 1; if (uI < tC.upgradeCosts.length) { upgradeCost = tC.upgradeCosts[uI]; if (money >= upgradeCost) canUpgrade = true; } } }
-                 towerActionsDiv.classList.toggle('visible', !!selectedTower); sellTowerBtn.disabled = !canSell; sellTowerBtn.textContent = `Sell (${sellAmount}$)`; upgradeTowerBtn.disabled = !canUpgrade; upgradeTowerBtn.textContent = (selectedTower && selectedTower.level >= selectedTower.maxLevel) ? 'Max Lvl' : `Upgrade (${upgradeCost}$)`; // Shortened Max Level text
-                 targetingControlsDiv.classList.toggle('visible', !!selectedTower);
-                 targetButtons.forEach(btn => { if (selectedTower) { btn.classList.toggle('active', btn.dataset.priority === currentPriority); btn.disabled = gameOver; btn.classList.toggle('disabled', gameOver); } else { btn.classList.remove('active'); btn.disabled = true; btn.classList.add('disabled'); } });
+                     ctx.fill();
+                     if (p.projectileType !== 'laser' && p.projectileType !== 'poison_dart') ctx.stroke(); // No stroke for laser/dart body
+                 });
              }
 
-            function setupEventListeners() { /* ... V4 Func ... */
-                startWaveBtn.addEventListener('click', startWave); sellTowerBtn.addEventListener('click', sellSelectedTower); upgradeTowerBtn.addEventListener('click', upgradeSelectedTower);
-                towerButtons.forEach(btn => { btn.addEventListener('click', () => { const t = btn.dataset.type; const c = TOWER_TYPES[t]; if (c) selectTowerPurchase(t, c.cost); }); });
-                targetButtons.forEach(btn => { btn.addEventListener('click', () => { if (selectedTower && !btn.disabled) { selectedTower.targetingPriority = btn.dataset.priority; updateUI(); } }); });
-                canvas.addEventListener('click', handleCanvasClick); canvas.addEventListener('mousemove', handleMouseMove); canvas.addEventListener('mouseleave', () => { if (placingTowerType) mouse = { x: -1, y: -1 }; updateScaledMouse(); }); // Update scaled mouse on leave
-                document.addEventListener('keydown', (event) => { if (event.key === 'Escape') { deselectTowerPurchase(); deselectPlacedTower(); } });
-                document.addEventListener('click', (event) => { if (!canvas.contains(event.target) && !event.target.closest('.controls')) { deselectPlacedTower(); } });
-                messageBtn.addEventListener('click', hideMessage);
-                window.addEventListener('resize', updateCanvasScale); // Add resize listener
-             }
+             // --- Visual Effects Handling --- (Unchanged)
+             function addEffect(x,y,r,c,t='circle'){effects.push({x,y,maxRadius:r,currentRadius:0,duration:20,timer:20,color:c||'rgba(255,255,0,0.5)',type:t})}
+             function handleEffects(){for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.timer--;e.currentRadius=e.maxRadius*(1-(e.timer/e.duration));if(e.timer<=0)effects.splice(i,1)}}
+             function drawEffects(){effects.forEach(e=>{ctx.globalAlpha=e.timer/e.duration;ctx.lineWidth=2;if(e.type==='explosion'){const nR=3;for(let i=1;i<=nR;i++){ctx.beginPath();const r=e.currentRadius*(i/nR);ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}}else{ctx.beginPath();ctx.arc(e.x,e.y,e.currentRadius,0,Math.PI*2);ctx.strokeStyle=e.color;ctx.stroke()}ctx.globalAlpha=1.0})}
 
-             function selectTowerPurchase(type, cost) { /* ... V4 Func ... */ if (money >= cost && !gameOver) { placingTowerType = type; deselectPlacedTower(); updateUI(); } else { console.log("..."); deselectTowerPurchase(); } }
-             function deselectTowerPurchase() { /* ... V4 Func ... */ placingTowerType = null; towerButtons.forEach(btn => btn.classList.remove('selected')); updateUI(); }
-             function selectPlacedTower(tower) { /* ... V4 Func ... */ selectedTower = tower; deselectTowerPurchase(); updateUI(); }
-             function deselectPlacedTower() { /* ... V4 Func ... */ if (selectedTower) { selectedTower = null; updateUI(); } }
+            // --- Wave Management --- (Unchanged)
+            function startWave(){if(waveInProgress||gameOver)return;wave++;enemiesToSpawn=8+wave*3;spawnTimer=ENEMY_SPAWN_INTERVAL;waveInProgress=true;deselectPlacedTower();updateUI()}
+            function handleWaves(){if(!waveInProgress){if(wave===0&&frameCount>WAVE_START_DELAY&&!gameOver)startWave();return}if(enemiesToSpawn>0&&spawnTimer<=0){spawnEnemy();enemiesToSpawn--;spawnTimer=ENEMY_SPAWN_INTERVAL}spawnTimer--;if(enemiesToSpawn<=0&&enemies.length===0){waveInProgress=false;let b=50+wave*10;let intr=Math.floor(money*INTEREST_RATE);money+=b+intr;console.log(`Wave ${wave} cleared! Bonus: ${b}$, Interest: ${intr}$`);updateUI()}}
 
-             // --- Mouse Handling with Scaling ---
-             function updateCanvasScale() {
-                 const rect = canvas.getBoundingClientRect();
-                 scaleX = BASE_CANVAS_WIDTH / rect.width;
-                 scaleY = BASE_CANVAS_HEIGHT / rect.height;
-                 // console.log("Canvas resized, ScaleX:", scaleX, "ScaleY:", scaleY);
-             }
+            // --- UI and Interaction --- (Unchanged)
+            function updateUI(){moneyDisplay.textContent=money;scoreDisplay.textContent=score;livesDisplay.textContent=lives;waveDisplay.textContent=wave;towerButtons.forEach(b=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(!c)return;const cost=c.cost;const d=money<cost||gameOver;b.disabled=d;b.classList.toggle('disabled',d);b.classList.toggle('selected',placingTowerType===t);b.textContent=`${t.charAt(0).toUpperCase()+t.slice(1)} (${cost}$)`});startWaveBtn.disabled=waveInProgress||gameOver;startWaveBtn.classList.toggle('disabled',waveInProgress||gameOver);let canSell=false,canUpgrade=false,sellAmount=0,upgradeCost=0,currentPriority=null;if(selectedTower&&!gameOver){canSell=true;sellAmount=Math.floor(selectedTower.totalCost*SELL_PERCENTAGE);currentPriority=selectedTower.targetingPriority;if(selectedTower.level<selectedTower.maxLevel){const tC=TOWER_TYPES[selectedTower.type];const uI=selectedTower.level-1;if(uI<tC.upgradeCosts.length){upgradeCost=tC.upgradeCosts[uI];if(money>=upgradeCost)canUpgrade=true}}}towerActionsDiv.classList.toggle('visible',!!selectedTower);sellTowerBtn.disabled=!canSell;sellTowerBtn.textContent=`Sell (${sellAmount}$)`;upgradeTowerBtn.disabled=!canUpgrade;upgradeTowerBtn.textContent=(selectedTower&&selectedTower.level>=selectedTower.maxLevel)?'Max Lvl':`Upgrade (${upgradeCost}$)`;targetingControlsDiv.classList.toggle('visible',!!selectedTower);targetButtons.forEach(b=>{if(selectedTower){b.classList.toggle('active',b.dataset.priority===currentPriority);b.disabled=gameOver;b.classList.toggle('disabled',gameOver)}else{b.classList.remove('active');b.disabled=true;b.classList.add('disabled')}});}
+            function setupEventListeners(){startWaveBtn.addEventListener('click',startWave);sellTowerBtn.addEventListener('click',sellSelectedTower);upgradeTowerBtn.addEventListener('click',upgradeSelectedTower);towerButtons.forEach(b=>{b.addEventListener('click',()=>{const t=b.dataset.type;const c=TOWER_TYPES[t];if(c)selectTowerPurchase(t,c.cost)})});targetButtons.forEach(b=>{b.addEventListener('click',()=>{if(selectedTower&&!b.disabled){selectedTower.targetingPriority=b.dataset.priority;updateUI()}})});canvas.addEventListener('click',handleCanvasClick);canvas.addEventListener('mousemove',handleMouseMove);canvas.addEventListener('mouseleave',()=>{if(placingTowerType)mouse={x:-1,y:-1};updateScaledMouse()});document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){deselectTowerPurchase();deselectPlacedTower()}});document.addEventListener('click',(e)=>{if(!canvas.contains(e.target)&&!e.target.closest('.controls')){deselectPlacedTower()}});messageBtn.addEventListener('click',hideMessage);window.addEventListener('resize',updateCanvasScale);}
+            function selectTowerPurchase(type,cost){if(money>=cost&&!gameOver){placingTowerType=type;deselectPlacedTower();updateUI()}else{console.log("...");deselectTowerPurchase()}}
+            function deselectTowerPurchase(){placingTowerType=null;towerButtons.forEach(b=>b.classList.remove('selected'));updateUI();}
+            function selectPlacedTower(tower){selectedTower=tower;deselectTowerPurchase();updateUI();}
+            function deselectPlacedTower(){if(selectedTower){selectedTower=null;updateUI()}}
 
-             function updateScaledMouse() {
-                 const rect = canvas.getBoundingClientRect();
-                 // Calculate mouse position relative to the scaled canvas content
-                 scaledMouse.x = (mouse.x - rect.left) * scaleX;
-                 scaledMouse.y = (mouse.y - rect.top) * scaleY;
-             }
+             // --- Mouse Handling with Scaling --- (Unchanged)
+             function updateCanvasScale(){const r=canvas.getBoundingClientRect();scaleX=BASE_CANVAS_WIDTH/r.width;scaleY=BASE_CANVAS_HEIGHT/r.height;}
+             function updateScaledMouse(){const r=canvas.getBoundingClientRect();scaledMouse.x=(mouse.x-r.left)*scaleX;scaledMouse.y=(mouse.y-r.top)*scaleY;}
+             function handleCanvasClick(event){mouse.x=event.clientX;mouse.y=event.clientY;updateScaledMouse();const gX=Math.floor(scaledMouse.x/TILE_SIZE);const gY=Math.floor(scaledMouse.y/TILE_SIZE);if(gX<0||gX>=GRID_WIDTH||gY<0||gY>=GRID_HEIGHT){console.log("...");deselectPlacedTower();return}if(placingTowerType){placeTower(gX,gY)}else{const cT=grid[gY]?.[gX]?.tower;if(cT){if(selectedTower===cT)deselectPlacedTower();else selectPlacedTower(cT)}else{deselectPlacedTower()}}}
+             function handleMouseMove(event){mouse.x=event.clientX;mouse.y=event.clientY;updateScaledMouse();}
 
-             function handleCanvasClick(event) { // Uses scaledMouse
-                 mouse.x = event.clientX; // Store raw mouse pos
-                 mouse.y = event.clientY;
-                 updateScaledMouse(); // Calculate scaled position
-
-                 const gridX = Math.floor(scaledMouse.x / TILE_SIZE);
-                 const gridY = Math.floor(scaledMouse.y / TILE_SIZE);
-
-                 // Bounds check for grid coordinates
-                  if (gridX < 0 || gridX >= GRID_WIDTH || gridY < 0 || gridY >= GRID_HEIGHT) {
-                      console.log("Click outside grid bounds");
-                      deselectPlacedTower(); // Deselect if clicking outside
-                      return;
-                  }
-
-                 if (placingTowerType) { placeTower(gridX, gridY); }
-                 else { const clickedTower = grid[gridY]?.[gridX]?.tower; if (clickedTower) { if (selectedTower === clickedTower) deselectPlacedTower(); else selectPlacedTower(clickedTower); } else { deselectPlacedTower(); } }
-             }
-             function handleMouseMove(event) { // Uses scaledMouse
-                 mouse.x = event.clientX; // Store raw mouse pos
-                 mouse.y = event.clientY;
-                 updateScaledMouse(); // Calculate scaled position
-                 // Placement preview drawing uses scaledMouse directly now
-             }
-
-            // --- Utility Functions ---
-            // Returns distance squared for optimization
-            function getDistanceSq(obj1, obj2) { const dx = obj1.x - obj2.x; const dy = obj1.y - obj2.y; return dx*dx + dy*dy; }
-            // Original getDistance (only used where needed, e.g., path calculation, enemy movement direction)
-            function getDistance(obj1, obj2) { return Math.sqrt(getDistanceSq(obj1, obj2)); }
-
+            // --- Utility Functions --- (Unchanged)
+            function getDistanceSq(o1,o2){const dx=o1.x-o2.x,dy=o1.y-o2.y;return dx*dx+dy*dy;}
+            function getDistance(o1,o2){return Math.sqrt(getDistanceSq(o1,o2));}
 
             // --- Game Over / Message --- (Unchanged)
-            function endGame(win) { /* ... V4 Func ... */ gameOver = true; waveInProgress = false; placingTowerType = null; selectedTower = null; const m = win ? `Wave Cleared! Won! Score: ${score}` : `Game Over! Score: ${score}, Wave: ${wave}`; showMessage(m); updateUI(); }
-            function showMessage(text) { /* ... V4 Func ... */ messageText.textContent = text; messageBox.style.display = 'block'; gamePaused = true; }
-            function hideMessage() { /* ... V4 Func ... */ messageBox.style.display = 'none'; gamePaused = false; if (!gameOver) requestAnimationFrame(gameLoop); }
+            function endGame(win){gameOver=true;waveInProgress=false;placingTowerType=null;selectedTower=null;const m=win?`Wave Cleared! Won! Score: ${score}`:`Game Over! Score: ${score}, Wave: ${wave}`;showMessage(m);updateUI();}
+            function showMessage(text){messageText.textContent=text;messageBox.style.display='block';gamePaused=true;}
+            function hideMessage(){messageBox.style.display='none';gamePaused=false;if(!gameOver)requestAnimationFrame(gameLoop);}
 
             // --- Start the Game ---
             gameLoop();
